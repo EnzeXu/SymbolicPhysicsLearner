@@ -1,0 +1,7 @@
+numpy
+pandas
+sympy==1.10.1
+scipy
+findiff
+matplotlib
+tqdm
