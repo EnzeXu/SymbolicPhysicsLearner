@@ -1,12 +1,12 @@
 #!/bin/bash
 
-for noise_ratio in "0.000" "0.002" "0.004" "0.006" "0.008" "0.010"
+for noise_ratio in "0.008" # "0.000" "0.002" "0.004" "0.006" "0.008" "0.010"
 do
-    for seed in {0..23} #"0" "1" "2"
+    for seed in {0..23} #
     do
-        for task in "Lotka_Volterra" "SIR" "Lorenz"
+        for task in "SIR" "Lorenz"
         do
-            for eq_id in "1" "2"
+            for eq_id in "3"
             do
                 for env_id in "0" "1" "2" "3" "4"
                 do
@@ -20,3 +20,7 @@ done
 
 
 
+#for x in {1..100}
+#do
+#  echo "Number: $x"
+#done
