@@ -2,7 +2,7 @@
 
 for noise_ratio in "0.006" # "0.000" "0.002" "0.004" "0.006" "0.008" "0.010"
 do
-    for seed in "0" "1" "2"
+    for seed in {3..23} # "0" "1" "2"
     do
         for task in "Lotka_Volterra" "SIR" "Lorenz"
         do
