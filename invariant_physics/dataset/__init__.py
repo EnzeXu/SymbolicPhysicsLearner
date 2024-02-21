@@ -1,6 +1,6 @@
 from .dataset import get_dataset, ODE_DICT
 from .ode import ODEDataset
-from ._utils import get_now_string, evaluate_expression, extract, remove_constant, determine_most_frequent_terms, transform_sympy, set_eq_precision
+from ._utils import get_now_string, evaluate_expression, extract, remove_constant, determine_most_frequent_terms, transform_sympy, set_eq_precision, evaluate_trajectory_rmse
 from .term_trace import TermTrace
 
 __all__ = [
@@ -15,4 +15,5 @@ __all__ = [
     "determine_most_frequent_terms",
     "transform_sympy",
     "set_eq_precision",
+    "evaluate_trajectory_rmse"
 ]

@@ -39,6 +39,7 @@ def purify_strategy1(eq, data, variable_list, threshold=0.05):
             abs_ratio_array[i][j] = abs_value_array[i][j] / np.sum(abs_value_array[i])
     avg_ratio = np.average(abs_ratio_array, axis=0)
     purified_full_terms = [full_terms[i] for i in range(len(full_terms)) if avg_ratio[i] >= threshold]
+    print(f"full terms: {full_terms} ratio: {avg_ratio} threshold: {threshold} purified_full_terms: {purified_full_terms}")
     purified_eq = sp.sympify(sp.Add(*purified_full_terms))
     # print(avg_ratio)
     # print(f"output: {purified_eq}")

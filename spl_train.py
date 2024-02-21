@@ -9,6 +9,7 @@ from score import simplify_eq, score_with_est
 from spl_base import SplBase
 from spl_task_utils import *
 # from invariant_physics.spl import SplBase, score_with_est,
+from invariant_physics.dataset import evaluate_trajectory_rmse, get_dataset
 
 from utils import extract, get_now_string, setup_seed, remove_constant
 
@@ -64,6 +65,9 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
         runtimes for successful runs. 
     """
 
+    log_start_time = get_now_string()
+    ode = get_dataset(log_start_time)
+    ode.build()
 
     func_score = score_with_est
     func_score = partial(func_score, task_ode_num=task_ode_num)
@@ -81,7 +85,7 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
     noise_ratio = args.noise_ratio
     env_id = args.env_id
 
-    log_start_time = get_now_string()
+    # log_start_time = get_now_string()
     log_save_folder = f"logs/{task}/"
     log_summary_save_folder = f"logs/summary/"
     log_save_detail_path = f"logs/{task}/{log_start_time}.csv"
@@ -96,9 +100,9 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
     if not os.path.exists(log_path):
         with open(log_path, "w") as f:
             f.write(
-                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed\n")
+                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed\n")
     with open(log_path, "a") as f:
-        f.write(f"{log_start_time},Begin,{None},{task},{num_run},{num_env},{None},{None},{None},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{env_id},{args.seed}\n")
+        f.write(f"{log_start_time},Begin,{None},{task},{num_run},{num_env},{None},{None},{None},{None},{None},{None},{None},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{env_id},{args.seed}\n")
 
 
 
@@ -208,9 +212,18 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
 
         # print()
         log_end_time = get_now_string()
+
+
+        mse_list, rmse_list, relative_mse_list, relative_rmse_list = np.zeros(num_env), np.zeros(num_env), np.zeros(
+            num_env), np.zeros(num_env)
+        # debug
+
+        mse, rmse, relative_mse, relative_rmse = evaluate_trajectory_rmse(ode, best_res, env_id, task_ode_num)
+
+
         print(f"success: {int(str(truth_ode_terms)==str(best_res_terms))}")
         with open(log_path, "a") as f:
-            f.write(f"{log_start_time},End,{log_end_time},{task},{num_run},{num_env},{int(str(truth_ode_terms)==str(best_res_terms))},{truth_ode.replace(',',';')},{best_res.replace(',',';')},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{args.env_id},{args.seed}\n")
+            f.write(f"{log_start_time},End,{log_end_time},{task},{num_run},{num_env},{int(str(truth_ode_terms)==str(best_res_terms))},{truth_ode.replace(',',';')},{best_res.replace(',',';')},{mse},{rmse},{relative_mse},{relative_rmse},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{args.env_id},{args.seed}\n")
 
     success_rate = num_success / num_run
     # if count_success:

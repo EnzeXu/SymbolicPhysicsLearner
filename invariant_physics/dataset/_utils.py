@@ -8,7 +8,7 @@ import pytz
 import re
 from scipy.stats import qmc
 from sympy import symbols, sympify, Mul
-
+from scipy.integrate import odeint
 
 def sample_lhs(lb, ub, n, skip=1):
     large_n = skip * n
@@ -162,6 +162,31 @@ def set_eq_precision(eq_str, digit):
             transformed_terms.append(rounded_coeff * rest)
     transformed_expr = sum(transformed_terms)
     return str(transformed_expr)
+
+
+def evaluate_eq_into_value(eq_str, curve_names, data_points):
+    results = np.zeros(data_points.shape[0])
+    for i, point in enumerate(data_points):
+        var_values = {var_name: value for var_name, value in zip(curve_names, point)}
+        result = eval(eq_str, {}, var_values)
+        results[i] = result
+    return results
+
+
+def evaluate_trajectory_rmse(ode, eq_str, i_env, task_ode_num):
+    data_points = ode.y_noise[i_env][ode.test_indices]
+    dy_prediction = evaluate_eq_into_value(eq_str, ode.params_config["curve_names"], data_points)
+    dy_truth = ode.dy_noise[i_env][ode.test_indices, task_ode_num - 1]
+    # print(f"dy_prediction shape: {dy_prediction.shape} dy_truth shape: {dy_truth.shape}")
+    assert dy_prediction.shape == dy_truth.shape
+    mse = np.mean((dy_prediction - dy_truth) ** 2)
+    rmse = np.sqrt(mse)
+    variance = np.var(dy_truth)
+    std_deviation = np.sqrt(variance)
+    relative_mse = mse / variance if variance != 0 else float('inf')
+    relative_rmse = rmse / std_deviation if std_deviation != 0 else float('inf')
+    return mse, rmse, relative_mse, relative_rmse
+
 
 
 if __name__ == "__main__":

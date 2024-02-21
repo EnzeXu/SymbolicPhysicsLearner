@@ -7,6 +7,7 @@ from scipy.integrate import odeint
 from tqdm import tqdm
 
 from ._utils import sample_lhs, save_to_csv
+from .gp import GPPCA0
 
 
 class ODEDataset:
@@ -16,6 +17,7 @@ class ODEDataset:
         self.ode_dim = self.params_config["ode_dim"]
         self.ode_name = self.params_config["task"]
         self.params, self.y0 = self._get_ode_params_and_y0(self.args.num_env, self.args.params_strategy)
+        self.params_eval = [0.0 for i in range(len(self.params_config["curve_names"]))]
         self.t_series = None
         self.train_indices, self.test_indices = None, None
         self.num_train, self.num_test = None, None
@@ -37,13 +39,13 @@ class ODEDataset:
             default_list=self.params_config["default_params_list"],
             base=self.params_config["random_params_base"],
             seed=self.args.seed,
-            random_rate=0.3,)
+            random_rate=0.1,)
         y0 = params_func(
             num_env=num_env,
             default_list=self.params_config["default_y0_list"],
             base=self.params_config["random_y0_base"],
             seed=self.args.seed,
-            random_rate=0.3, )
+            random_rate=0.1, )
         return params, y0
 
     def _func(self, x, t, env_id):
@@ -80,13 +82,10 @@ class ODEDataset:
         self.train_indices = train_indices
         self.test_indices = test_indices
 
-        ## for SPL only
-        # save_folder = os.path.join(self.args.save_folder, self.ode_name, self.args.time_string)
         save_folder = os.path.join(self.args.save_folder, self.ode_name, f"{self.args.noise_ratio:.3f}")
-
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
-
+        # os.path.join(data_dir, task, f"{noise_ratio:.3f}", f'{task}_test_{env_id}.csv')
         print(f"ode_name: {self.ode_name}")
         print(f"num_env: {self.args.num_env}")
         print(f"t_min: {self.params_config['t_min']}, t_max: {self.params_config['t_max']}, dt: {self.params_config['dt']}")
@@ -102,7 +101,15 @@ class ODEDataset:
 
         for i in tqdm(range(self.args.num_env)):
             self.y[i] = odeint(self._func, self.y0[i], self.t_series, (i,))
-            self.y_noise[i] = self.y[i] * (1 + 2.0 * self.args.noise_ratio * (-0.5 + np.random.random(self.y[i].shape)))
+            # self.y_noise[i] = self.y[i] * (1 + 2.0 * self.args.noise_ratio * (-0.5 + np.random.random(self.y[i].shape)))
+            # print("self.y_noise[i].shape", self.y_noise[i].shape)
+
+            std_base = np.std(self.y[i], axis=0)
+            noise_sigma = std_base * self.args.noise_ratio
+            # noise_sigma = np.broadcast_to(noise_sigma, (2000, 2))
+            # print("std_base.shape", std_base.shape)
+            # print("noise shape: ", (noise_sigma * np.random.randn(*self.y_noise[i].shape)).shape)
+            self.y_noise[i] = self.y[i] + noise_sigma * np.random.randn(*self.y[i].shape)
 
             y_noise_train, y_noise_test = self.y_noise[i][train_indices], self.y_noise[i][test_indices]
             raw_path = os.path.join(save_folder, f"{self.ode_name}_{i}_raw.csv")
@@ -117,16 +124,36 @@ class ODEDataset:
 
             for j in range(self.ode_dim):
                 self.dy_noise[i][:, j] = np.gradient(self.y_noise[i][:, j], self.t_series)
-                # dy_noise_train = self.dy_noise[i][:, j][train_indices]
-                # dy_noise_test = self.dy_noise[i][:, j][test_indices]
-                # dy_path_train = os.path.join(save_folder, f"{self.ode_name}_d{self.params_config['curve_names'][j]}_train_{i}.csv")
-                # dy_path_test = os.path.join(save_folder, f"{self.ode_name}_d{self.params_config['curve_names'][j]}_test_{i}.csv")
-                # save_to_csv(dy_path_train, [y_noise_train[:, idx] for idx in range(self.ode_dim)] + [dy_noise_train])
-                # save_to_csv(dy_path_test, [y_noise_test[:, idx] for idx in range(self.ode_dim)] + [dy_noise_test])
+                
             dy_path_train = os.path.join(save_folder, f"{self.ode_name}_train_{i}.csv")
             dy_path_test = os.path.join(save_folder, f"{self.ode_name}_test_{i}.csv")
+
+            # Generate points based on Gaussian Process of observation
+            if self.args.dataset_gp:
+                # Generate with frequency = `freq` points per second
+                freq = 50
+                t_max = max(self.t_series[train_indices])
+                t_min = min(self.t_series[train_indices])
+                num_points = int(freq * (t_max-t_min)) 
+                t_train = np.linspace(t_min, t_max, num=num_points)
+                y_train_generated = np.zeros([num_points, self.ode_dim]) 
+                dy_noise_train = np.zeros([num_points, self.ode_dim]) 
+                for j in range(self.ode_dim):
+                    pca = GPPCA0(y_noise_train[:, j].reshape(-1,1), self.t_series[train_indices], noise_sigma[j], sigma_out=std_base[j])
+                    y_train_generated[:, j] = pca.get_predictive(new_sample=1, t_new=t_train).reshape(-1)
+                    y_train_mean = pca.get_predictive_mean(t_new=t_train).reshape(-1)
+                    y_train_std = np.sqrt(np.diag(pca.get_X_cov(t_new=t_train)))
+                    if self.args.save_figure:
+                        save_path = os.path.join(save_folder, f"{self.ode_name}_GP_{i}.png")
+                        self._plot_GP(save_path, t_train, y_train_generated[:, j], y_train_mean, y_train_std)
+#                     dy_noise_train[:, j] = np.gradient(y_train_generated[:, j], t_train)
+                y_noise_train = y_train_generated
+            else:
+                t_train = self.t_series[train_indices]
+                dy_noise_train = self.dy_noise[i][train_indices, :]
+            
             save_to_csv(dy_path_train, 
-                        [self.t_series[train_indices]] + [y_noise_train[:, j] for j in range(self.ode_dim)] + [self.dy_noise[i][train_indices, j] for j in range(self.ode_dim)], 
+                        [t_train] + [y_noise_train[:, j] for j in range(self.ode_dim)] + [dy_noise_train[:, j] for j in range(self.ode_dim)], 
                         ["t"] + self.params_config["curve_names"][:self.ode_dim] + ['d'+name for name in self.params_config["curve_names"][:self.ode_dim]])
             save_to_csv(dy_path_test, 
                         [self.t_series[test_indices]] + [y_noise_test[:, j] for j in range(self.ode_dim)] + [self.dy_noise[i][test_indices, j] for j in range(self.ode_dim)], 
@@ -143,6 +170,20 @@ class ODEDataset:
             plt.scatter(t_train, y_noise_train[:, i], s=10, label=f"cur-{i + 1} [train noise] [n={len(t_train)}]")
             # plt.scatter(t_test, y_test[:, i], label=f"curve-{i + 1} (test)")
             plt.scatter(t_test, y_noise_test[:, i], s=10, label=f"cur-{i + 1} [test noise] [n={len(t_test)}]")
+        plt.xlabel('Time')
+        plt.ylabel('Val')
+        plt.legend()
+        plt.grid()
+        plt.savefig(save_path, dpi=300)
+        plt.clf()
+    
+    def _plot_GP(self, save_path, t_train, y_train_gen, y_train_mean, y_train_std):
+        assert len(t_train) == len(y_train_mean) == len(y_train_std)
+        plt.figure(figsize=(16, 9))
+        for i in range(self.ode_dim):
+            plt.fill_between(t_train, y_train_mean - y_train_std, y_train_mean + y_train_std, color='gray', alpha=0.5, label='Standard Deviation')
+            plt.plot(t_train, y_train_mean, label='Mean', color='blue')
+            plt.plot(t_train, y_train_gen, '+g', label='Generated datapoints')
         plt.xlabel('Time')
         plt.ylabel('Val')
         plt.legend()

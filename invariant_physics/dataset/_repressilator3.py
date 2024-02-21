@@ -45,6 +45,7 @@ PARAMS_CONFIG = {
                 'A->x', 'A->y','A->z','A->C'],
     "ntn_list": ['A'],
     "truth_ode_format": ["{0}/(1+z**{1})-x", "{0}/(1+x**{1})-y", "{0}/(1+y**{1})-z"],
+    "purification_threshold": 0.05,
 }
 
 

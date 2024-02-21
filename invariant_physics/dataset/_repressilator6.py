@@ -52,6 +52,7 @@ PARAMS_CONFIG = {
         "{3}*y-{3}*v",
         "{3}*z-{3}*w",
     ],
+    "purification_threshold": 0.05,
 }
 
 

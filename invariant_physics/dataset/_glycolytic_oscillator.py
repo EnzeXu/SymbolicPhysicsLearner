@@ -44,6 +44,7 @@ PARAMS_CONFIG = {
                  'A->x', 'A->y'],
     "ntn_list": ['A'],
     "truth_ode_format": ["{0}*x-{1}*x*y", "{3}*x*y-{2}*y"],
+    "purification_threshold": 0.05,
 }
 
 

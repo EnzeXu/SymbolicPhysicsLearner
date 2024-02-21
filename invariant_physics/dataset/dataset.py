@@ -36,11 +36,12 @@ def get_dataset(time_string=None):
     parser.add_argument("--save_folder", type=str, default="data/", help="save_folder")
     parser.add_argument("--train_sample_strategy", type=str, default="uniform", choices=["uniform", "random"], help="based on the sample strategy in the whole time series, which way to sample train & test set on it")
 
-    parser.add_argument("--use_new_reward", type=int, default=True, help="0: old score, 1: new score-min, 2: new score-mean")
+    parser.add_argument("--use_new_reward", type=int, default=0, help="0: old score, 1: new score-min, 2: new score-mean")
     parser.add_argument("--loss_func", type=str, choices=["VF", "L2"], default="L2", help="loss function: L2 or VF")
     parser.add_argument("--num_run", type=int, default="3", help="num_run")
     parser.add_argument("--task_ode_num", type=int, default="1", help="task_ode_num")
     parser.add_argument("--dataset_sparse", type=str, default="sparse", choices=["sparse", "dense"], help="sparse or dense")
+    parser.add_argument("--dataset_gp", type=int, default=0, choices=[0, 1], help="Gaussian Process or not")
     # parser.add_argument("--log_suffix", type=str, default="", help="log name suffix")
 
     #     args = parser.parse_args()

@@ -114,6 +114,7 @@ def score_with_est(eq, tree_size, data_list,
         initial_eqs = eq
     else:
         initial_eqs = [eq] * len(data_list)
+        
     for env, data in enumerate(data_list):
         # print(f"[normal] one data shape: {data.shape} ")
         eq = initial_eqs[env]
@@ -127,6 +128,7 @@ def score_with_est(eq, tree_size, data_list,
         origin_variable = variables[1 + task_ode_num - 1]
         globals()['f_true'] = data[target_variable].to_numpy()
         globals()['y_true'] = data[origin_variable].to_numpy()
+        data_t_series = data['t'].to_numpy()
         # print(f"@@@@@ data[target_variable].to_numpy()={data[target_variable].to_numpy()[:20]}")
 
         ## count number of numerical values in eq

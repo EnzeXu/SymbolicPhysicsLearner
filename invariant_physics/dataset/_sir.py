@@ -41,14 +41,15 @@ PARAMS_CONFIG = {
     "t_min": 0,
     "t_max": 100,
     "curve_names": ["x", "y", "z"],
-    "rule_map": ['A->(A+A)', 'A->(A-A)', 'A->(A*A)', 'A->(A/A)', 'A->(A*C)',
+    "rule_map": ['A->(A+A)', 'A->(A-A)', 'A->(A*A)', 'A->(A*C)',
                 'A->x', 'A->y','A->z'],
     "ntn_list": ['A'],
     "truth_ode_format": [
         "-{0}*x*y",
         "{0}*x*y-{1}*y",
         "{1}*y",
-    ]
+    ],
+    "purification_threshold": 0.10,
 }
 
 

@@ -48,7 +48,8 @@ PARAMS_CONFIG = {
         "{0}*x-{1}*y+{2}*x*z",
         "{1}*x+{0}*y+{2}*y*z",
         "-{3}*(z-x**2-y**2)",
-    ]
+    ],
+    "purification_threshold": 0.05,
 }
 
 
