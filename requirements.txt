@@ -5,3 +5,4 @@ scipy
 findiff
 matplotlib
 tqdm
+gpytorch
