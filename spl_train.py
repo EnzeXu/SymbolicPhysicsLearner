@@ -84,7 +84,9 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
 
     noise_ratio = args.noise_ratio
     env_id = args.env_id
-
+    dataset_type_string = str(ode.args.train_test_total)
+    dataset_list_string = str(list(ode.args.train_test_total_list)).replace(", ", "/").replace("[", "").replace("]", "").replace("(", "").replace(")", "").replace(",", ""),
+    env_dataset_size = int(ode.args.train_test_total_list[env_id])
     # log_start_time = get_now_string()
     log_save_folder = f"logs/{task}/"
     log_summary_save_folder = f"logs/summary/"
@@ -92,6 +94,9 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
     # log_save_term_trace_path = f"logs/{task}/{log_start_time}_term_trace.png"
     # log_save_test_dic_full_path = f"logs/{task}/{log_start_time}_full_test.pkl"
     log_path = f"{log_summary_save_folder}/logs_{task}.csv"
+    log_path_begin = f"{log_summary_save_folder}/logs_{task}_begin.csv"
+    log_path_end = f"{log_summary_save_folder}/logs_{task}_end.csv"
+    log_path_results = f"{log_summary_save_folder}/logs_{task}_results.csv"
 
     if not os.path.exists(log_save_folder):
         os.makedirs(log_save_folder)
@@ -100,16 +105,24 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
     if not os.path.exists(log_path):
         with open(log_path, "w") as f:
             f.write(
-                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed\n")
-    with open(log_path, "a") as f:
-        f.write(f"{log_start_time},Begin,{None},{task},{num_run},{num_env},{None},{None},{None},{None},{None},{None},{None},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{env_id},{args.seed}\n")
+                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list,junk\n")
+    if not os.path.exists(log_path_begin):
+        with open(log_path_begin, "w") as f:
+            f.write(
+                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list,junk\n")
+    if not os.path.exists(log_path_end):
+        with open(log_path_end, "w") as f:
+            f.write(
+                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list,junk\n")
+    with open(log_path_begin, "a") as f:
+        f.write(f"{log_start_time},Begin,{None},{task},{num_run},{num_env},{None},{None},{None},{None},{None},{None},{None},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{env_id},{args.seed},{dataset_type_string},{dataset_list_string},{env_dataset_size}\n")
 
 
 
-    train_sample = pd.read_csv(os.path.join(data_dir, task, f"{noise_ratio:.3f}", f'{task}_train_{env_id}.csv'))
-    test_sample = pd.read_csv(os.path.join(data_dir, task, f"{noise_ratio:.3f}", f'{task}_test_{env_id}.csv'))
+    train_sample = pd.read_csv(os.path.join(data_dir, task, log_start_time, f'{task}_train_{env_id}.csv'))
+    test_sample = pd.read_csv(os.path.join(data_dir, task, log_start_time, f'{task}_test_{env_id}.csv'))
 
-    with open(f'{data_dir}/{task}/{noise_ratio:.3f}/{task}_info.json', 'r') as f:
+    with open(f'{data_dir}/{task}/{log_start_time}/{task}_info.json', 'r') as f:
         info = json.load(f)
 
     num_success = 0
@@ -222,8 +235,8 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
 
 
         print(f"success: {int(str(truth_ode_terms)==str(best_res_terms))}")
-        with open(log_path, "a") as f:
-            f.write(f"{log_start_time},End,{log_end_time},{task},{num_run},{num_env},{int(str(truth_ode_terms)==str(best_res_terms))},{truth_ode.replace(',',';')},{best_res.replace(',',';')},{mse},{rmse},{relative_mse},{relative_rmse},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{args.env_id},{args.seed}\n")
+        with open(log_path_end, "a") as f:
+            f.write(f"{log_start_time},End,{log_end_time},{task},{num_run},{num_env},{int(str(truth_ode_terms)==str(best_res_terms))},{truth_ode.replace(',',';')},{best_res.replace(',',';')},{mse},{rmse},{relative_mse},{relative_rmse},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{args.env_id},{args.seed},{env_dataset_size},{dataset_type_string},{dataset_list_string}\n")
 
     success_rate = num_success / num_run
     # if count_success:
@@ -324,9 +337,14 @@ if __name__ == "__main__":
         default=420, help="Random seed used")
     parser.add_argument("--noise_ratio", type=float, default=0.00, help="noise ratio")
     parser.add_argument("--resume", type=int, default=0, help="resume (1) or not (0)")
-    parser.add_argument("--train_test_total", type=int, default=250, help="num_train+num_test")
+    parser.add_argument("--train_test_total", type=str, default="500",
+                        help="num_train+num_test. E.g., '500', '500/400/300/200/100'. If you want to specify the total of different environment, use '/' to split")
+    parser.add_argument("--dataset_sparse", type=str, default="sparse", choices=["sparse", "dense"],
+                        help="sparse or dense")
+    parser.add_argument("--save_figure", type=int, default=0, help="save figure or not")
+    parser.add_argument("--dataset_gp", type=int, default=0, choices=[0, 1], help="Gaussian Process or not")
+    parser.add_argument('--main_path', type=str, default="./", help="""directory to the main path""")
     parser.add_argument("--env_id", type=int, default=-1, help="0,1,2,3,4")
-    parser.add_argument("--dataset_sparse", type=str, default="sparse", choices=["sparse", "dense"], help="sparse or dense")
     # parser.add_argument(
     #     "--log_suffix",
     #     type=str,

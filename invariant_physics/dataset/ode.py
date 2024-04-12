@@ -19,8 +19,9 @@ class ODEDataset:
         self.params, self.y0 = self._get_ode_params_and_y0(self.args.num_env, self.args.params_strategy)
         self.params_eval = [0.0 for i in range(len(self.params_config["curve_names"]))]
         self.t_series = None
-        self.train_indices, self.test_indices = None, None
-        self.num_train, self.num_test = None, None
+        self.train_indices_list, self.test_indices_list = [], []
+        self.num_train_list, self.num_test_list = [], []
+        # self.num_train, self.num_test = None, None
         self.n = int(self.params_config["t_max"] / self.params_config["dt"])
         self.dt = self.params_config["dt"]
         self.y = np.zeros([self.args.num_env, self.n, self.ode_dim])
@@ -61,35 +62,49 @@ class ODEDataset:
         # print(self.t_series)
 
     def build(self):
-        train_test_total = self.args.train_test_total
-        self.num_train = int(self.args.train_ratio * train_test_total)
-        self.num_test = train_test_total - self.num_train
+        # train_test_total = self.args.train_test_total
+        self.num_train_list = [int(self.args.train_ratio * one_train_test_total) for one_train_test_total in self.args.train_test_total_list]
+        # self.num_test = train_test_total - self.num_train
+        self.num_test_list = [one_train_test_total - one_num_train for one_train_test_total, one_num_train in zip(self.args.train_test_total_list, self.num_train_list)]
         indices = np.arange(self.n)
-        assert self.num_train + self.num_test <= self.n
+        for one_num_train, one_num_test in zip(self.num_train_list, self.num_test_list):
+            assert one_num_train + one_num_test <= self.n
         if self.args.train_sample_strategy == "uniform":
             assert self.args.dataset_sparse in ["sparse", "dense"]
-            if self.args.dataset_sparse == "sparse":
-                train_indices = indices[0::(int(self.n / 1.01) // self.num_train)][:self.num_train]
-                test_indices = indices[0::(int(self.n / 1.01) // self.num_test)][:self.num_test]
-            else:
-                sample_freq = int(0.03 / self.dt) if int(0.05 / self.dt) >= 1 else 1
-                train_indices = indices[::sample_freq][:self.num_train]
-                test_indices = indices[::sample_freq][:self.num_test]
+            train_indices_list, test_indices_list = [], []
+            for i in range(self.args.num_env):
+                one_num_train, one_num_test = self.num_train_list[i], self.num_test_list[i]
+                if self.args.dataset_sparse == "sparse":
+                    train_indices_list.append(indices[0::(int(self.n / 1.01) // one_num_train)][:one_num_train])
+                    test_indices_list.append(indices[0::(int(self.n / 1.01) // one_num_test)][:one_num_test])
+                else:
+                    sample_freq = int(0.03 / self.dt) if int(0.05 / self.dt) >= 1 else 1
+                    train_indices_list.append(indices[::sample_freq][:one_num_train])
+                    test_indices_list.append(indices[::sample_freq][:one_num_test])
         else:  # random
-            np.random.shuffle(indices)
-            train_indices = sorted(indices[:self.num_train])
-            test_indices = sorted(indices[self.num_train: self.num_train + self.num_test])
-        self.train_indices = train_indices
-        self.test_indices = test_indices
+            train_indices_list, test_indices_list = [], []
+            for i in range(self.args.num_env):
+                one_num_train, one_num_test = self.num_train_list[i], self.num_test_list[i]
+                np.random.shuffle(indices)
+                train_indices_list.append(sorted(indices[:one_num_train]))
+                test_indices_list.append(sorted(indices[one_num_train: one_num_train + one_num_test]))
+        self.train_indices_list = train_indices_list
+        self.test_indices_list = test_indices_list
 
-        save_folder = os.path.join(self.args.save_folder, self.ode_name, f"{self.args.noise_ratio:.3f}")
+        save_folder = os.path.join(self.args.main_path, self.args.data_dir, self.ode_name, self.args.time_string)
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
-        # os.path.join(data_dir, task, f"{noise_ratio:.3f}", f'{task}_test_{env_id}.csv')
+
         print(f"ode_name: {self.ode_name}")
         print(f"num_env: {self.args.num_env}")
         print(f"t_min: {self.params_config['t_min']}, t_max: {self.params_config['t_max']}, dt: {self.params_config['dt']}")
-        print(f"train set: {self.num_train} ({self.num_train / train_test_total * 100:.1f} %), test set: {self.num_test} ({self.num_test / train_test_total * 100:.1f} %), train_test_total: {train_test_total}, n_total: {self.n}")
+        print(f"train_test_total_list: {self.args.train_test_total_list}")
+        for i in range(self.args.num_env):
+            one_train_test_total = self.args.train_test_total_list[i]
+            one_num_train = self.num_train_list[i]
+            one_num_test = self.num_test_list[i]
+            print(f"Environment {i:02d}: train set: {one_num_train} ({one_num_train / one_train_test_total * 100:.1f} %), test set: {one_num_test} ({one_num_test / one_train_test_total * 100:.1f} %), train_test_total: {one_train_test_total}, n_total: {self.n}")
+        # print(f"train set: {self.num_train} ({self.num_train / train_test_total * 100:.1f} %), test set: {self.num_test} ({self.num_test / train_test_total * 100:.1f} %), train_test_total: {train_test_total}, n_total: {self.n}")
         print(f"noise ratio: {self.args.noise_ratio}")
         print(f"save_folder: {save_folder}")
 
@@ -111,13 +126,13 @@ class ODEDataset:
             # print("noise shape: ", (noise_sigma * np.random.randn(*self.y_noise[i].shape)).shape)
             self.y_noise[i] = self.y[i] + noise_sigma * np.random.randn(*self.y[i].shape)
 
-            y_noise_train, y_noise_test = self.y_noise[i][train_indices], self.y_noise[i][test_indices]
+            y_noise_train, y_noise_test = self.y_noise[i][self.train_indices_list[i]], self.y_noise[i][self.test_indices_list[i]]
             raw_path = os.path.join(save_folder, f"{self.ode_name}_{i}_raw.csv")
             save_to_csv(raw_path, [self.t_series] + [self.y_noise[i][:, j] for j in range(self.ode_dim)], ["t"] + self.params_config["curve_names"][:self.ode_dim])
 
             if self.args.save_figure:
-                t_train, t_test = self.t_series[train_indices], self.t_series[test_indices]
-                y_train, y_test = self.y[i][train_indices], self.y[i][test_indices]
+                t_train, t_test = self.t_series[self.train_indices_list[i]], self.t_series[self.test_indices_list[i]]
+                y_train, y_test = self.y[i][self.train_indices_list[i]], self.y[i][self.test_indices_list[i]]
 
                 save_path = os.path.join(save_folder, f"{self.ode_name}_{i}.png")
                 self._plot_dataset(save_path, self.t_series, t_train, t_test, self.y[i], y_train, y_test, y_noise_train, y_noise_test)
@@ -132,14 +147,14 @@ class ODEDataset:
             if self.args.dataset_gp:
                 # Generate with frequency = `freq` points per second
                 freq = 50
-                t_max = max(self.t_series[train_indices])
-                t_min = min(self.t_series[train_indices])
-                num_points = int(freq * (t_max-t_min)) 
+                t_max = max(self.t_series[self.train_indices_list[i]])
+                t_min = min(self.t_series[self.train_indices_list[i]])
+                num_points = int(freq * (t_max-t_min))
                 t_train = np.linspace(t_min, t_max, num=num_points)
-                y_train_generated = np.zeros([num_points, self.ode_dim]) 
-                dy_noise_train = np.zeros([num_points, self.ode_dim]) 
+                y_train_generated = np.zeros([num_points, self.ode_dim])
+                dy_noise_train = np.zeros([num_points, self.ode_dim])
                 for j in range(self.ode_dim):
-                    pca = GPPCA0(y_noise_train[:, j].reshape(-1,1), self.t_series[train_indices], noise_sigma[j], sigma_out=std_base[j])
+                    pca = GPPCA0(y_noise_train[:, j].reshape(-1,1), self.t_series[self.train_indices_list[i]], noise_sigma[j], sigma_out=std_base[j])
                     y_train_generated[:, j] = pca.get_predictive(new_sample=1, t_new=t_train).reshape(-1)
                     y_train_mean = pca.get_predictive_mean(t_new=t_train).reshape(-1)
                     y_train_std = np.sqrt(np.diag(pca.get_X_cov(t_new=t_train)))
@@ -149,14 +164,14 @@ class ODEDataset:
 #                     dy_noise_train[:, j] = np.gradient(y_train_generated[:, j], t_train)
                 y_noise_train = y_train_generated
             else:
-                t_train = self.t_series[train_indices]
-                dy_noise_train = self.dy_noise[i][train_indices, :]
+                t_train = self.t_series[self.train_indices_list[i]]
+                dy_noise_train = self.dy_noise[i][self.train_indices_list[i], :]
             
             save_to_csv(dy_path_train, 
                         [t_train] + [y_noise_train[:, j] for j in range(self.ode_dim)] + [dy_noise_train[:, j] for j in range(self.ode_dim)], 
                         ["t"] + self.params_config["curve_names"][:self.ode_dim] + ['d'+name for name in self.params_config["curve_names"][:self.ode_dim]])
             save_to_csv(dy_path_test, 
-                        [self.t_series[test_indices]] + [y_noise_test[:, j] for j in range(self.ode_dim)] + [self.dy_noise[i][test_indices, j] for j in range(self.ode_dim)], 
+                        [self.t_series[self.test_indices_list[i]]] + [y_noise_test[:, j] for j in range(self.ode_dim)] + [self.dy_noise[i][self.test_indices_list[i], j] for j in range(self.ode_dim)],
                         ["t"] + self.params_config["curve_names"][:self.ode_dim] + ['d'+name for name in self.params_config["curve_names"][:self.ode_dim]])
 
     def _plot_dataset(self, save_path, t, t_train, t_test, y, y_train, y_test, y_noise_train, y_noise_test):

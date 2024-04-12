@@ -174,9 +174,9 @@ def evaluate_eq_into_value(eq_str, curve_names, data_points):
 
 
 def evaluate_trajectory_rmse(ode, eq_str, i_env, task_ode_num):
-    data_points = ode.y_noise[i_env][ode.test_indices]
+    data_points = ode.y_noise[i_env][ode.test_indices_list[i_env]]
     dy_prediction = evaluate_eq_into_value(eq_str, ode.params_config["curve_names"], data_points)
-    dy_truth = ode.dy_noise[i_env][ode.test_indices, task_ode_num - 1]
+    dy_truth = ode.dy_noise[i_env][ode.test_indices_list[i_env], task_ode_num - 1]
     # print(f"dy_prediction shape: {dy_prediction.shape} dy_truth shape: {dy_truth.shape}")
     assert dy_prediction.shape == dy_truth.shape
     mse = np.mean((dy_prediction - dy_truth) ** 2)
@@ -188,11 +188,70 @@ def evaluate_trajectory_rmse(ode, eq_str, i_env, task_ode_num):
     return mse, rmse, relative_mse, relative_rmse
 
 
+def get_train_test_total_list(train_test_total: str, num_env: int, seed=None):
+    """
+    Args:
+        train_test_total: supports three types of argument:
+            (1) one integer, like 500, indicating it's a balanced dataset;
+            (2) integers split by "/", like 500/400/300/200/100. There would be an error if its length mismatches the num_env;
+            (3) a string "default_x", following a built-in dict as below.
+        num_env: an integer, number of environment
+        seed: an integer for generating random ordering list
+    Returns:
+        a list of environment size, e.g., [500, 400, 300, 200, 100].
+    """
+    default_dic = {
+        "default_0": "500/500/500/500/500",
+        "default_1": "20/20/20/20/20",
+        "default_2": "100/100/100/100/100",
+        "default_3": "500/400/40/20/10",
+        "default_4": "500/80/40/20/10",
+        "default_5": "100/50/50/20/10",
+        "default_6": "500/400/300/200/100",
+        "default_7": "500/400/300/200/10",
+        "default_8": "500/400/300/20/10",
+    }
+
+    if train_test_total.isdigit():
+        train_test_total_list = [int(train_test_total) for i in range(num_env)]
+    else:
+        if "/" not in train_test_total:
+            assert train_test_total in default_dic, "Error: key error in get_train_test_total_list: " + str(train_test_total)
+            string = default_dic[train_test_total]
+        else:
+            string = train_test_total
+        parts = string.split("/")
+        train_test_total_list = [int(item) for item in parts]
+    assert len(train_test_total_list) == num_env, "Error: mismatching between " + str(train_test_total) + " and " + str(num_env)
+    # print(train_test_total_list)
+    one_order = generate_random_order(num_env, seed)
+    train_test_total_list_swapped = reseat(train_test_total_list, one_order)
+    print(f"Swap dataset size: {train_test_total_list} -> {train_test_total_list_swapped}")
+    return train_test_total_list_swapped
+
+
+def generate_random_order(n, seed=None):
+    if seed is not None:
+        random.seed(seed)
+    numbers = list(range(n))
+    random.shuffle(numbers)
+    return numbers
+
+
+def reseat(one_list, one_order):
+    assert len(one_list) == len(one_order)
+    return [one_list[one_order[i]] for i in range(len(one_order))]
+
 
 if __name__ == "__main__":
-    a = " -0.389927009553766*x*y + 1.1997924353311362*x"
-    a = "-1/(5*x + 1) * (1+2*x) - 1*x*(1-y)"
-    print(transform_sympy(a))
+    # get_train_test_total_list("default_1", 5)
+    numbers = [10,20,30,0,50]
+    order = generate_random_order(5, 500)
+    print(order)
+    print(reseat(numbers, order))
+    # a = " -0.389927009553766*x*y + 1.1997924353311362*x"
+    # a = "-1/(5*x + 1) * (1+2*x) - 1*x*(1-y)"
+    # print(transform_sympy(a))
     # a = {
     #     "1": {
     #         "purified_predicted_terms": "aaaa"
