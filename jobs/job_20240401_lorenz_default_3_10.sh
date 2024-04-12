@@ -11,8 +11,8 @@ do
                 do
                     for env_id in "0" "1" "2" "3" "4"
                     do
-                        echo "python spl_train.py --task ${model} --num_env 5 --use_new_reward 0 --num_run 1 --noise_ratio ${noise_ratio} --seed ${seed} --task_ode_num ${eq_id} --train_test_total ${dataset}"
-                        python spl_train.py --task ${model} --num_env 5 --use_new_reward 0 --num_run 1 --noise_ratio ${noise_ratio} --seed ${seed} --task_ode_num ${eq_id} --train_test_total ${dataset}
+                        echo "python spl_train.py --task ${model} --num_env 5 --env_id ${env_id} --use_new_reward 0 --num_run 1 --noise_ratio ${noise_ratio} --seed ${seed} --task_ode_num ${eq_id} --train_test_total ${dataset}"
+                        python spl_train.py --task ${model} --num_env 5 --env_id ${env_id} --use_new_reward 0 --num_run 1 --noise_ratio ${noise_ratio} --seed ${seed} --task_ode_num ${eq_id} --train_test_total ${dataset}
                     done
                 done
             done   
