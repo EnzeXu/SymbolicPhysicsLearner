@@ -119,7 +119,7 @@ cd /home/exu03/workspace/SymbolicPhysicsLearner
 noise_list = ["0.000", "0.001", "0.002", "0.004", "0.008", "0.016", "0.032", "0.064", "0.128", "0.256"]
 
 process_list_map = [[] for _ in range(len(noise_list))]
-for k in range(2, 3, 1):
+for k in range(3, 4, 1):
     for short in ["pp", "sir", "lorenz"]:
 
         for i, j in zip(range(len(noise_list)), noise_list):
