@@ -99,7 +99,7 @@ tmux has-session -t {0}_default_{1} 2>/dev/null
 if [ $? != 0 ]; then
   tmux new-session -d -s {0}_default_{1}
 
-  tmux send-keys -t {0}_default_{1} "source venv/bin/activate" C-m
+  tmux send-keys -t {0}_default_{1} "source ../Invariant_Physics/venv/bin/activate" C-m
   tmux send-keys -t {0}_default_{1} "bash jobs/job_20240401_{0}_default_{1}_{2}.sh" C-m
   echo "Launched jobs/job_20240401_{0}_default_{1}_{2}.sh"
   # If you want to leave the session detached, remove the line below
@@ -107,7 +107,7 @@ if [ $? != 0 ]; then
 else
   echo "Session '{0}_default_{1}' already exists. Attaching..."
   tmux attach -t {0}_default_{1}
-  tmux send-keys -t {0}_default_{1} "source venv/bin/activate" C-m
+  tmux send-keys -t {0}_default_{1} "source ../Invariant_Physics/venv/bin/activate" C-m
   tmux send-keys -t {0}_default_{1} "bash jobs/job_20240401_{0}_default_{1}_{2}.sh" C-m
 fi
 """

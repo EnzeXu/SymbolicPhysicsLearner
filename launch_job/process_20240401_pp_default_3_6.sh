@@ -8,7 +8,7 @@ tmux has-session -t pp_default_3 2>/dev/null
 if [ $? != 0 ]; then
   tmux new-session -d -s pp_default_3
 
-  tmux send-keys -t pp_default_3 "source venv/bin/activate" C-m
+  tmux send-keys -t pp_default_3 "source ../Invariant_Physics/venv/bin/activate" C-m
   tmux send-keys -t pp_default_3 "bash jobs/job_20240401_pp_default_3_6.sh" C-m
   echo "Launched jobs/job_20240401_pp_default_3_6.sh"
   # If you want to leave the session detached, remove the line below
@@ -16,6 +16,6 @@ if [ $? != 0 ]; then
 else
   echo "Session 'pp_default_3' already exists. Attaching..."
   tmux attach -t pp_default_3
-  tmux send-keys -t pp_default_3 "source venv/bin/activate" C-m
+  tmux send-keys -t pp_default_3 "source ../Invariant_Physics/venv/bin/activate" C-m
   tmux send-keys -t pp_default_3 "bash jobs/job_20240401_pp_default_3_6.sh" C-m
 fi
