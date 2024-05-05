@@ -67,7 +67,7 @@ eq_id_dic = {
 }
 
 template = """#!/bin/bash
-for dataset in "500" "1000"
+for dataset in "{1}"
 do
     for model in "{0}" #"Lotka_Volterra" "Lorenz" "SIR" "Fluid_Flow"
     do
@@ -94,21 +94,21 @@ launch_template = """#!/bin/bash
 cd /home/exu03/workspace/SymbolicPhysicsLearner
 
 # Check if the tmux session exists
-tmux has-session -t {0} 2>/dev/null
+tmux has-session -t {0}_{1}_{2} 2>/dev/null
 
 if [ $? != 0 ]; then
-  tmux new-session -d -s {0}
+  tmux new-session -d -s {0}_{1}_{2}
 
-  tmux send-keys -t {0} "source ../Invariant_Physics/venv/bin/activate" C-m
-  tmux send-keys -t {0} "bash jobs/job_20240427_{0}_{2}.sh" C-m
-  echo "Launched jobs/job_20240427_{0}_{2}.sh"
+  tmux send-keys -t {0}_{1}_{2} "source ../Invariant_Physics/venv/bin/activate" C-m
+  tmux send-keys -t {0}_{1}_{2} "bash jobs/job_20240427_{0}_{1}_{2}.sh" C-m
+  echo "Launched jobs/job_20240427_{0}_{1}_{2}.sh on tmux session {0}_{1}_{2}"
   # If you want to leave the session detached, remove the line below
   # tmux send-keys -t {0}"exit" C-m
 else
-  echo "Session '{0}' already exists. Attaching..."
-  tmux attach -t {0}
-  tmux send-keys -t {0} "source ../Invariant_Physics/venv/bin/activate" C-m
-  tmux send-keys -t {0} "bash jobs/job_20240427_{0}_{2}.sh" C-m
+  echo "Session '{0}_{1}_{2}' already exists. Attaching..."
+  tmux attach -t {0}_{1}_{2}
+  tmux send-keys -t {0}_{1}_{2} "source ../Invariant_Physics/venv/bin/activate" C-m
+  tmux send-keys -t {0}_{1}_{2} "bash jobs/job_20240401_{0}_{1}_{2}.sh" C-m
 fi
 """
 
@@ -119,15 +119,16 @@ cd /home/exu03/workspace/SymbolicPhysicsLearner
 noise_list = ["0.000", "0.001", "0.002", "0.004", "0.008", "0.016", "0.032", "0.064", "0.128", "0.256", "0.0001", "0.00001"]
 
 process_list_map = [[] for _ in range(len(noise_list))]
-for k in range(3, 4, 1):
-    for short in ["pp"]: # "pp", "sir", "lorenz"
+for k in range(0, 2, 1):
+    size = ["500", "1000"][k]
+    for short in ["pp"]:
 
         for i, j in zip(range(len(noise_list)), noise_list):
-            with open(f"jobs/job_20240427_{short}_{i+1}.sh", "w") as f:
-                f.write(template.format(short_dic[short], k, j, eq_id_dic[short]))
-            with open(f"launch_job/process_20240427_{short}_{i+1}.sh", "w") as f:
-                f.write(launch_template.format(short, k, i+1))
-            process_list_map[i].append(f"launch_job/process_20240427_{short}_{i+1}.sh")
+            with open(f"jobs/job_20240427_{short}_{size}_{i+1}.sh", "w") as f:
+                f.write(template.format(short_dic[short], size, j, eq_id_dic[short]))
+            with open(f"launch_job/process_20240427_{short}_{size}_{i+1}.sh", "w") as f:
+                f.write(launch_template.format(short, size, i+1))
+            process_list_map[i].append(f"launch_job/process_20240427_{short}_{size}_{i+1}.sh")
 
 for i, j in zip(range(len(noise_list)), noise_list):
     with open(f"launch_job/launch_20240427_server_{i+1}.sh", "w") as f:
