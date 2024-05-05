@@ -94,21 +94,21 @@ launch_template = """#!/bin/bash
 cd /home/exu03/workspace/SymbolicPhysicsLearner
 
 # Check if the tmux session exists
-tmux has-session -t {0}_default_{1} 2>/dev/null
+tmux has-session -t {0} 2>/dev/null
 
 if [ $? != 0 ]; then
-  tmux new-session -d -s {0}_default_{1}
+  tmux new-session -d -s {0}
 
-  tmux send-keys -t {0}_default_{1} "source ../Invariant_Physics/venv/bin/activate" C-m
-  tmux send-keys -t {0}_default_{1} "bash jobs/job_20240427_{0}_default_{1}_{2}.sh" C-m
-  echo "Launched jobs/job_20240427_{0}_default_{1}_{2}.sh"
+  tmux send-keys -t {0} "source ../Invariant_Physics/venv/bin/activate" C-m
+  tmux send-keys -t {0} "bash jobs/job_20240427_{0}_{2}.sh" C-m
+  echo "Launched jobs/job_20240427_{0}_{2}.sh"
   # If you want to leave the session detached, remove the line below
-  # tmux send-keys -t {0}_default_{1} "exit" C-m
+  # tmux send-keys -t {0}"exit" C-m
 else
-  echo "Session '{0}_default_{1}' already exists. Attaching..."
-  tmux attach -t {0}_default_{1}
-  tmux send-keys -t {0}_default_{1} "source ../Invariant_Physics/venv/bin/activate" C-m
-  tmux send-keys -t {0}_default_{1} "bash jobs/job_20240427_{0}_default_{1}_{2}.sh" C-m
+  echo "Session '{0}' already exists. Attaching..."
+  tmux attach -t {0}
+  tmux send-keys -t {0} "source ../Invariant_Physics/venv/bin/activate" C-m
+  tmux send-keys -t {0} "bash jobs/job_20240427_{0}_{2}.sh" C-m
 fi
 """
 
@@ -123,11 +123,11 @@ for k in range(3, 4, 1):
     for short in ["pp"]: # "pp", "sir", "lorenz"
 
         for i, j in zip(range(len(noise_list)), noise_list):
-            with open(f"jobs/job_20240427_{short}_default_{k}_{i+1}.sh", "w") as f:
+            with open(f"jobs/job_20240427_{short}_{i+1}.sh", "w") as f:
                 f.write(template.format(short_dic[short], k, j, eq_id_dic[short]))
-            with open(f"launch_job/process_20240427_{short}_default_{k}_{i+1}.sh", "w") as f:
+            with open(f"launch_job/process_20240427_{short}_{i+1}.sh", "w") as f:
                 f.write(launch_template.format(short, k, i+1))
-            process_list_map[i].append(f"launch_job/process_20240427_{short}_default_{k}_{i+1}.sh")
+            process_list_map[i].append(f"launch_job/process_20240427_{short}_{i+1}.sh")
 
 for i, j in zip(range(len(noise_list)), noise_list):
     with open(f"launch_job/launch_20240427_server_{i+1}.sh", "w") as f:
