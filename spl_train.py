@@ -275,10 +275,10 @@ if __name__ == "__main__":
         '--num_env',
         default=-1,
         type=int, help='number of environments being used for scoring, default 4')
-    parser.add_argument(
-        '--eta',
-        default=0.9999,
-        type=float, help='eta, parsimony coefficient, defaul 0.9999')
+    # parser.add_argument(
+    #     '--eta',
+    #     default=0.9999,
+    #     type=float, help='eta, parsimony coefficient, defaul 0.9999')
     parser.add_argument(
         '--output_dir',
         default='results',
@@ -345,6 +345,11 @@ if __name__ == "__main__":
     parser.add_argument("--dataset_gp", type=int, default=0, choices=[0, 1], help="Gaussian Process or not")
     parser.add_argument('--main_path', type=str, default="./", help="""directory to the main path""")
     parser.add_argument("--env_id", type=int, default=-1, help="0,1,2,3,4")
+    parser.add_argument('--eta', default=0.99, type=float, help='eta, parsimony coefficient, default 0.99')
+    parser.add_argument('--integrate_method', type=str, default="ode_int", choices=["ode_int", "solve_ivp"], help="""integrate_method""")
+    parser.add_argument("--train_ratio", type=float, default=0.8, help="train_ratio")
+    parser.add_argument("--test_ratio", type=float, default=0.2, help="test_ratio")
+
     # parser.add_argument(
     #     "--log_suffix",
     #     type=str,

@@ -174,9 +174,11 @@ def evaluate_eq_into_value(eq_str, curve_names, data_points):
 
 
 def evaluate_trajectory_rmse(ode, eq_str, i_env, task_ode_num):
-    data_points = ode.y_noise[i_env][ode.test_indices_list[i_env]]
+    # data_points = ode.y_noise[i_env][ode.test_indices_list[i_env]]
+    data_points = ode.y_noise[i_env]
     dy_prediction = evaluate_eq_into_value(eq_str, ode.params_config["curve_names"], data_points)
-    dy_truth = ode.dy_noise[i_env][ode.test_indices_list[i_env], task_ode_num - 1]
+    # dy_truth = ode.dy_noise[i_env][ode.test_indices_list[i_env], task_ode_num - 1]
+    dy_truth = ode.dy_noise[i_env][:, task_ode_num - 1]
     # print(f"dy_prediction shape: {dy_prediction.shape} dy_truth shape: {dy_truth.shape}")
     assert dy_prediction.shape == dy_truth.shape
     mse = np.mean((dy_prediction - dy_truth) ** 2)

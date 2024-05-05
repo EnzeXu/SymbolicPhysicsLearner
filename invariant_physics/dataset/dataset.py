@@ -31,7 +31,8 @@ def get_dataset(time_string=None):
     parser.add_argument("--sample_strategy", type=str, default="uniform", choices=["uniform", "lhs"], help="sample strategy")
     parser.add_argument("--params_strategy", type=str, default="default", choices=["default", "random"], help="params strategy")
     parser.add_argument("--train_test_total", type=str, default="500", help="num_train+num_test. E.g., '500', '500/400/300/200/100'. If you want to specify the total of different environment, use '/' to split")
-    parser.add_argument("--train_ratio", type=float, default=0.8, help="train_ratio; test_ratio=1-train_ratio")
+    parser.add_argument("--train_ratio", type=float, default=0.8, help="train_ratio")
+    parser.add_argument("--test_ratio", type=float, default=0.2, help="test_ratio")
     parser.add_argument("--save_figure", type=int, default=0, help="save figure or not")
     parser.add_argument("--data_dir", type=str, default="data/", help="save_folder")
     parser.add_argument("--train_sample_strategy", type=str, default="uniform", choices=["uniform", "random"], help="based on the sample strategy in the whole time series, which way to sample train & test set on it")
@@ -45,7 +46,8 @@ def get_dataset(time_string=None):
     parser.add_argument('--main_path', type=str, default="./", help="""directory to the main path""")
     parser.add_argument('--eta', default=0.99, type=float, help='eta, parsimony coefficient, default 0.99')
     parser.add_argument('--combine_operator', default='average', type=str, help="""please select which operator used to combine rewards from different environments: [min, average]""")
-    parser.add_argument("--env_id", type=int, default=-1, help="0,1,2,3,4")
+    parser.add_argument('--integrate_method', type=str, default="ode_int", choices=["ode_int", "solve_ivp"], help="""integrate_method""")
+
     # parser.add_argument("--log_suffix", type=str, default="", help="log name suffix")
 
     #     args = parser.parse_args()
@@ -55,6 +57,9 @@ def get_dataset(time_string=None):
     else:
         args.time_string = time_string
     args.train_test_total_list = get_train_test_total_list(args.train_test_total, args.num_env, args.seed)
+    print(f"args.train_test_total_list: {type(args.train_test_total_list)}: {args.train_test_total_list}")
+    print(f"str(args.train_test_total_list): {type(str(args.train_test_total_list))}: {str(args.train_test_total_list)}")
+    print(str(args.train_test_total_list).replace(", ", "/").replace("[", "").replace("]", "").replace("(", "").replace(")", "").replace(",", ""))
     ode = ODE_DICT.get(args.task)(args)
     return ode
 
