@@ -67,7 +67,7 @@ eq_id_dic = {
 }
 
 template = """#!/bin/bash
-for dataset in "default_{1}"
+for dataset in "500" "1000"
 do
     for model in "{0}" #"Lotka_Volterra" "Lorenz" "SIR" "Fluid_Flow"
     do

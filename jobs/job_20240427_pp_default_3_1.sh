@@ -1,5 +1,5 @@
 #!/bin/bash
-for dataset in "default_3"
+for dataset in "500" "1000"
 do
     for model in "Lotka_Volterra" #"Lotka_Volterra" "Lorenz" "SIR" "Fluid_Flow"
     do
