@@ -85,7 +85,7 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
     noise_ratio = args.noise_ratio
     env_id = args.env_id
     dataset_type_string = str(ode.args.train_test_total)
-    dataset_list_string = str(list(ode.args.train_test_total_list)).replace(", ", "/").replace("[", "").replace("]", "").replace("(", "").replace(")", "").replace(",", ""),
+    dataset_list_string = str(list(ode.args.train_test_total_list)).replace(", ", "/").replace("[", "").replace("]", "").replace("(", "").replace(")", "").replace(",", "")
     env_dataset_size = int(ode.args.train_test_total_list[env_id])
     # log_start_time = get_now_string()
     log_save_folder = f"logs/{task}/"
@@ -105,15 +105,15 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
     if not os.path.exists(log_path):
         with open(log_path, "w") as f:
             f.write(
-                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list,junk\n")
+                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list\n")
     if not os.path.exists(log_path_begin):
         with open(log_path_begin, "w") as f:
             f.write(
-                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list,junk\n")
+                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list\n")
     if not os.path.exists(log_path_end):
         with open(log_path_end, "w") as f:
             f.write(
-                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list,junk\n")
+                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list\n")
     with open(log_path_begin, "a") as f:
         f.write(f"{log_start_time},Begin,{None},{task},{num_run},{num_env},{None},{None},{None},{None},{None},{None},{None},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{env_id},{args.seed},{dataset_type_string},{dataset_list_string},{env_dataset_size}\n")
 
