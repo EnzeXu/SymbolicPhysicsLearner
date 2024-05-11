@@ -212,6 +212,10 @@ def get_train_test_total_list(train_test_total: str, num_env: int, seed=None):
         "default_6": "500/400/300/200/100",
         "default_7": "500/400/300/200/10",
         "default_8": "500/400/300/20/10",
+        "default_10": "200/200/200/200/200",
+        "default_11": "500/400/40/40/20",
+        "default_12": "500/200/200/50/50",
+        "default_13": "500/125/125/125/125",
     }
 
     if train_test_total.isdigit():
