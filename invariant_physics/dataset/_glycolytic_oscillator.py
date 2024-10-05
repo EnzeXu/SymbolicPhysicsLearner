@@ -5,6 +5,7 @@ PARAMS_CONFIG = {
     "task": "Glycolytic_Oscillator",
     "env_max": 10,
     "ode_dim": 7,
+    "ode_dim_function": 7,
     "params_strategy_list": ["default", "random"],
     "params": {
         "default": params_default,

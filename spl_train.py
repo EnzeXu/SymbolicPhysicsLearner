@@ -9,7 +9,7 @@ from score import simplify_eq, score_with_est
 from spl_base import SplBase
 from spl_task_utils import *
 # from invariant_physics.spl import SplBase, score_with_est,
-from invariant_physics.dataset import evaluate_trajectory_rmse, get_dataset
+from invariant_physics.dataset import evaluate_trajectory_rmse, get_dataset, load_argparse, simplify_and_replace_constants, judge_expression_equal
 
 from utils import extract, get_now_string, setup_seed, remove_constant
 
@@ -68,6 +68,8 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
     log_start_time = get_now_string()
     ode = get_dataset(log_start_time)
     ode.build()
+    if ode.args.extract_csv:
+        ode.extract_csv()
 
     func_score = score_with_est
     func_score = partial(func_score, task_ode_num=task_ode_num)
@@ -84,16 +86,22 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
 
     noise_ratio = args.noise_ratio
     env_id = args.env_id
-    dataset_type_string = str(ode.args.train_test_total)
-    dataset_list_string = str(list(ode.args.train_test_total_list)).replace(", ", "/").replace("[", "").replace("]", "").replace("(", "").replace(")", "").replace(",", "")
-    env_dataset_size = int(ode.args.train_test_total_list[env_id])
+
+    n_dynamic_string = str(ode.args.n_dynamic)
+    n_dynamic_list_string = str(ode.args.n_dynamic_list).replace(", ", "/").replace("[", "").replace("]", "").replace(
+        "(", "").replace(")", "").replace(",", "")
+
+    # dataset_type_string = str(ode.args.train_test_total)
+    # dataset_list_string = str(list(ode.args.train_test_total_list)).replace(", ", "/").replace("[", "").replace("]", "").replace("(", "").replace(")", "").replace(",", "")
+    # env_dataset_size = int(ode.args.train_test_total_list[env_id])
+
     # log_start_time = get_now_string()
     log_save_folder = f"logs/{task}/"
     log_summary_save_folder = f"logs/summary/"
     log_save_detail_path = f"logs/{task}/{log_start_time}.csv"
     # log_save_term_trace_path = f"logs/{task}/{log_start_time}_term_trace.png"
     # log_save_test_dic_full_path = f"logs/{task}/{log_start_time}_full_test.pkl"
-    log_path = f"{log_summary_save_folder}/logs_{task}.csv"
+    # log_path = f"{log_summary_save_folder}/logs_{task}.csv"
     log_path_begin = f"{log_summary_save_folder}/logs_{task}_begin.csv"
     log_path_end = f"{log_summary_save_folder}/logs_{task}_end.csv"
     log_path_results = f"{log_summary_save_folder}/logs_{task}_results.csv"
@@ -102,27 +110,23 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
         os.makedirs(log_save_folder)
     if not os.path.exists(log_summary_save_folder):
         os.makedirs(log_summary_save_folder)
-    if not os.path.exists(log_path):
-        with open(log_path, "w") as f:
-            f.write(
-                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list\n")
     if not os.path.exists(log_path_begin):
         with open(log_path_begin, "w") as f:
             f.write(
-                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list\n")
+                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,env_dataset_size,n_dynamic,n_dynamic_list,cleaned_truth,cleaned_pred,match,seed\n")
     if not os.path.exists(log_path_end):
         with open(log_path_end, "w") as f:
             f.write(
-                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,seed,env_dataset_size,dataset_type,dataset_list\n")
+                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,env_dataset_size,n_dynamic,n_dynamic_list,cleaned_truth,cleaned_pred,match,seed\n")
     with open(log_path_begin, "a") as f:
-        f.write(f"{log_start_time},Begin,{None},{task},{num_run},{num_env},{None},{None},{None},{None},{None},{None},{None},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{env_id},{args.seed},{dataset_type_string},{dataset_list_string},{env_dataset_size}\n")
+        f.write(f"{log_start_time},Begin,{None},{task},{num_run},{num_env},{None},{None},{None},{None},{None},{None},{None},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{env_id},{ode.args.n_data_samples},{n_dynamic_string},{n_dynamic_list_string},{None},{None},{None},{args.seed}\n")
 
 
 
-    train_sample = pd.read_csv(os.path.join(data_dir, task, log_start_time, f'{task}_train_{env_id}.csv'))
-    test_sample = pd.read_csv(os.path.join(data_dir, task, log_start_time, f'{task}_test_{env_id}.csv'))
+    train_sample = pd.read_csv(os.path.join(data_dir, task, log_start_time, "csv", f'{task}_train_{env_id}.csv'))
+    test_sample = pd.read_csv(os.path.join(data_dir, task, log_start_time, "csv", f'{task}_test_{env_id}.csv'))
 
-    with open(f'{data_dir}/{task}/{log_start_time}/{task}_info.json', 'r') as f:
+    with open(f'{data_dir}/{task}/{log_start_time}/csv/{task}_info.json', 'r') as f:
         info = json.load(f)
 
     num_success = 0
@@ -235,8 +239,26 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
 
 
         print(f"success: {int(str(truth_ode_terms)==str(best_res_terms))}")
+        try:
+            cleaned_truth = simplify_and_replace_constants(truth_ode.replace(',',';'))
+        except Exception as e:
+            print(f"{log_start_time},End,{log_end_time},{task},{num_run},{num_env}:", e)
+            cleaned_truth = None
+
+        try:
+            cleaned_pred = simplify_and_replace_constants(best_res.replace(',', ';'))
+        except Exception as e:
+            print(f"{log_start_time},End,{log_end_time},{task},{num_run},{num_env}:", e)
+            cleaned_pred = None
+
+        try:
+            match = int(judge_expression_equal(cleaned_truth, cleaned_pred))
+        except Exception as e:
+            print(f"{log_start_time},End,{log_end_time},{task},{num_run},{num_env}:", e)
+            match = None
+
         with open(log_path_end, "a") as f:
-            f.write(f"{log_start_time},End,{log_end_time},{task},{num_run},{num_env},{int(str(truth_ode_terms)==str(best_res_terms))},{truth_ode.replace(',',';')},{best_res.replace(',',';')},{mse},{rmse},{relative_mse},{relative_rmse},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{args.env_id},{args.seed},{env_dataset_size},{dataset_type_string},{dataset_list_string}\n")
+            f.write(f"{log_start_time},End,{log_end_time},{task},{num_run},{num_env},{int(str(truth_ode_terms)==str(best_res_terms))},{truth_ode.replace(',',';')},{best_res.replace(',',';')},{mse},{rmse},{relative_mse},{relative_rmse},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{args.env_id},{ode.args.n_data_samples},{n_dynamic_string},{n_dynamic_list_string},{cleaned_truth},{cleaned_pred},{match},{args.seed}\n")
 
     success_rate = num_success / num_run
     # if count_success:
@@ -256,105 +278,106 @@ def str2bool(v):
 
 
 if __name__ == "__main__":
-    output_folder = 'results_dsr/'  ## directory to save discovered results
-    save_eqs = True                 ## if true, discovered equations are saved to "output_folder" dir
-
-    parser = argparse.ArgumentParser(description='make_data')
-    parser.add_argument(
-        '--task',
-        default='Lotka_Volterra',
-        type=str, help="""please select the benchmark task from the list 
-                          [Lotka-Volterra
-                          go, # Glycolytic Oscillator
-                          ]""")
-    parser.add_argument(
-        "--task_ode_num",
-        type=int,
-        default=1, help="ODE # in current task, e.g. for Lotka-Volterra, 1 is for dx, 2 for dy")
-    parser.add_argument(
-        '--num_env',
-        default=-1,
-        type=int, help='number of environments being used for scoring, default 4')
+    # output_folder = 'results_dsr/'  ## directory to save discovered results
+    # save_eqs = True                 ## if true, discovered equations are saved to "output_folder" dir
+    #
+    # parser = argparse.ArgumentParser(description='make_data')
     # parser.add_argument(
-    #     '--eta',
-    #     default=0.9999,
-    #     type=float, help='eta, parsimony coefficient, defaul 0.9999')
-    parser.add_argument(
-        '--output_dir',
-        default='results',
-        type=str, help="""directory to store log and Monte Carlo trees""")
-    parser.add_argument(
-        '--max_added_grammar_count',
-        default=2,
-        type=int, help='number of grammars can be inserted at once (in forced nodes), 0 means no insertion allowed')
-    parser.add_argument(
-        "--force",
-        type=str2bool,
-        default=False, help="whether to force simplified nodes back into the tree or not")
-    parser.add_argument(
-        "--use_new_reward",
-        type=int,
-        default=0, help="0: old score, 1: new score-min, 2: new score-mean")
-    parser.add_argument(
-        "--reward_rescale",
-        type=str2bool,
-        default=False, help="whether or not to use rescale in the reward function")
-    parser.add_argument(
-        '--data_dir',
-        default='./data',
-        type=str, help="""directory to datasets""")
-    parser.add_argument(
-        '--error_tolerance',
-        default=0.99,
-        type=float, help='error_tolerance for reward functions 1 and 2, default 0.99')
-    parser.add_argument(
-        "--num_run",
-        type=int,
-        default=1, help="Number of tests to run")
-    parser.add_argument(
-        "--transplant_step",
-        type=int,
-        default=500, help="Number of MCTS iterations per transplant")
-    parser.add_argument(
-        "--loss_func",
-        type=str,
-        choices=["VF", "L2"],
-        default="L2", help="loss function: L2 or VF")
-    parser.add_argument(
-        '--combine_operator',
-        default='min',
-        type=str, help="""please select which operator used to combine rewards from different environments: 
-                          [min
-                           average, 
-                          ]""")
-    parser.add_argument(
-        '--min_lam_diff',
-        default=0.,
-        type=float, help='minimum weight for difference/residual reward in reward_function 2, default 0.0')
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=420, help="Random seed used")
-    parser.add_argument("--noise_ratio", type=float, default=0.00, help="noise ratio")
-    parser.add_argument("--resume", type=int, default=0, help="resume (1) or not (0)")
-    parser.add_argument("--train_test_total", type=str, default="500",
-                        help="num_train+num_test. E.g., '500', '500/400/300/200/100'. If you want to specify the total of different environment, use '/' to split")
-    parser.add_argument("--dataset_sparse", type=str, default="sparse", choices=["sparse", "dense"],
-                        help="sparse or dense")
-    parser.add_argument("--save_figure", type=int, default=0, help="save figure or not")
-    parser.add_argument("--dataset_gp", type=int, default=0, choices=[0, 1], help="Gaussian Process or not")
-    parser.add_argument('--main_path', type=str, default="./", help="""directory to the main path""")
-    parser.add_argument("--env_id", type=int, default=-1, help="0,1,2,3,4")
-    parser.add_argument('--eta', default=0.99, type=float, help='eta, parsimony coefficient, default 0.99')
-    parser.add_argument('--integrate_method', type=str, default="ode_int", choices=["ode_int", "solve_ivp"], help="""integrate_method""")
-    parser.add_argument("--train_ratio", type=float, default=0.8, help="train_ratio")
-    parser.add_argument("--test_ratio", type=float, default=0.2, help="test_ratio")
-
+    #     '--task',
+    #     default='Lotka_Volterra',
+    #     type=str, help="""please select the benchmark task from the list
+    #                       [Lotka-Volterra
+    #                       go, # Glycolytic Oscillator
+    #                       ]""")
     # parser.add_argument(
-    #     "--log_suffix",
+    #     "--task_ode_num",
+    #     type=int,
+    #     default=1, help="ODE # in current task, e.g. for Lotka-Volterra, 1 is for dx, 2 for dy")
+    # parser.add_argument(
+    #     '--num_env',
+    #     default=-1,
+    #     type=int, help='number of environments being used for scoring, default 4')
+    # # parser.add_argument(
+    # #     '--eta',
+    # #     default=0.9999,
+    # #     type=float, help='eta, parsimony coefficient, defaul 0.9999')
+    # parser.add_argument(
+    #     '--output_dir',
+    #     default='results',
+    #     type=str, help="""directory to store log and Monte Carlo trees""")
+    # parser.add_argument(
+    #     '--max_added_grammar_count',
+    #     default=2,
+    #     type=int, help='number of grammars can be inserted at once (in forced nodes), 0 means no insertion allowed')
+    # parser.add_argument(
+    #     "--force",
+    #     type=str2bool,
+    #     default=False, help="whether to force simplified nodes back into the tree or not")
+    # parser.add_argument(
+    #     "--use_new_reward",
+    #     type=int,
+    #     default=0, help="0: old score, 1: new score-min, 2: new score-mean")
+    # parser.add_argument(
+    #     "--reward_rescale",
+    #     type=str2bool,
+    #     default=False, help="whether or not to use rescale in the reward function")
+    # parser.add_argument(
+    #     '--data_dir',
+    #     default='./data',
+    #     type=str, help="""directory to datasets""")
+    # parser.add_argument(
+    #     '--error_tolerance',
+    #     default=0.99,
+    #     type=float, help='error_tolerance for reward functions 1 and 2, default 0.99')
+    # parser.add_argument(
+    #     "--num_run",
+    #     type=int,
+    #     default=1, help="Number of tests to run")
+    # parser.add_argument(
+    #     "--transplant_step",
+    #     type=int,
+    #     default=500, help="Number of MCTS iterations per transplant")
+    # parser.add_argument(
+    #     "--loss_func",
     #     type=str,
-    #     default="", help="log name suffix")
-    args = parser.parse_args()
+    #     choices=["VF", "L2"],
+    #     default="L2", help="loss function: L2 or VF")
+    # parser.add_argument(
+    #     '--combine_operator',
+    #     default='min',
+    #     type=str, help="""please select which operator used to combine rewards from different environments:
+    #                       [min
+    #                        average,
+    #                       ]""")
+    # parser.add_argument(
+    #     '--min_lam_diff',
+    #     default=0.,
+    #     type=float, help='minimum weight for difference/residual reward in reward_function 2, default 0.0')
+    # parser.add_argument(
+    #     "--seed",
+    #     type=int,
+    #     default=420, help="Random seed used")
+    # parser.add_argument("--noise_ratio", type=float, default=0.00, help="noise ratio")
+    # parser.add_argument("--resume", type=int, default=0, help="resume (1) or not (0)")
+    # parser.add_argument("--train_test_total", type=str, default="500",
+    #                     help="num_train+num_test. E.g., '500', '500/400/300/200/100'. If you want to specify the total of different environment, use '/' to split")
+    # parser.add_argument("--dataset_sparse", type=str, default="sparse", choices=["sparse", "dense"],
+    #                     help="sparse or dense")
+    # parser.add_argument("--save_figure", type=int, default=0, help="save figure or not")
+    # parser.add_argument("--dataset_gp", type=int, default=0, choices=[0, 1], help="Gaussian Process or not")
+    # parser.add_argument('--main_path', type=str, default="./", help="""directory to the main path""")
+    # parser.add_argument("--env_id", type=int, default=-1, help="0,1,2,3,4")
+    # parser.add_argument('--eta', default=0.99, type=float, help='eta, parsimony coefficient, default 0.99')
+    # parser.add_argument('--integrate_method', type=str, default="ode_int", choices=["ode_int", "solve_ivp"], help="""integrate_method""")
+    # parser.add_argument("--train_ratio", type=float, default=0.8, help="train_ratio")
+    # parser.add_argument("--test_ratio", type=float, default=0.2, help="test_ratio")
+
+
+    # args = parser.parse_args()
+
+    args, parser = load_argparse()
+    print(f"timestring: {args.timestring}")
+    print(f"main_path: {args.main_path}")
 
     RULEMAP = ['A->(A+A)', 'A->(A-A)', 'A->(A*A)', 'A->(A/A)', 'A->(A*C)',
                          'A->x', 'A->y']
@@ -377,7 +400,7 @@ if __name__ == "__main__":
                             max_len=50,
                             eta=1 - 1e-3,
                             max_module_init=20,
-                            num_transplant=1,
+                            num_transplant=3,
                             num_aug=0,
                             transplant_step=args.transplant_step,
                             count_success=True,

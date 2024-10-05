@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from ._utils import extract
+from ._utils import extract, simplify_and_replace_constants
 
 
 class TermTrace:
@@ -15,6 +15,7 @@ class TermTrace:
         for i, one_env_term in enumerate(origin_terms):
             # print(f"one_env_term={one_env_term}")
             full_terms, terms, coefficient_terms = extract(one_env_term)
+            terms = [simplify_and_replace_constants(item) for item in terms]
             self.term_list[i].append(terms)
             terms_string = str(terms)
             if terms_string not in self.term_dic:

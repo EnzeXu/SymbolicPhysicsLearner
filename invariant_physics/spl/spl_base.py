@@ -8,15 +8,35 @@ import numpy as np
 
 from .production_rule_utils import get_nonterminal_rules, preprocess_exp, simplify_eqs, to_prod
 from ..dataset import TermTrace
-# from ..spl import purify_strategy1
+# from ..spl import purify_strategy
 from ..dataset import extract, evaluate_expression
+
+def save_reward_history(i_episode, eqs, reward, path):
+    with open(path, "a") as f:
+        f.write(f"{i_episode},{','.join(eqs)},{reward}\n")
+
+
+def len_tree_size(string: str, strategy="default"):
+    assert strategy in ["default", "shorten"]
+    if strategy == "default":
+        return 1
+    target_list = ["A", "B"]
+    assert "->" in string
+    target = string.split("->")[-1]
+    # print([target.count(ch) for ch in target_list])
+    count_sum = sum([target.count(ch) for ch in target_list])
+    if count_sum >= 2 or ("B" in target and "C" in target):
+        return 1
+    else:
+        return 0
+
 
 class SplBase:
     
     def __init__(self, data_sample, base_grammars, aug_grammars, nt_nodes, max_len, max_module, aug_grammars_allowed,
-                 func_score, exploration_rate=1/np.sqrt(2), eta=0.9999, max_added_grammar_count=2, force=True,
-                 added_basic_grammars=[], forced_nodes=[], data_t_series=None, i_transplant=1, i_test=1, output_dir='.', task="", num_env=None, term_trace_path=None,
-                 variable_list=None, full_data=None):
+                 func_score, eta, exploration_rate=1/np.sqrt(2), max_added_grammar_count=2, force=True,
+                 added_basic_grammars=[], forced_nodes=[], data_t_series_list=None, i_transplant=1, i_test=1, output_dir='.', task="", num_env=None, term_trace_path=None,
+                 variable_list=None, full_data=None, timestring=None, tree_size_strategy=None):
         self.data_sample = data_sample
         self.base_grammars = base_grammars
         self.grammars = base_grammars + [x for x in aug_grammars if x not in base_grammars] 
@@ -36,7 +56,7 @@ class SplBase:
         self.max_added_grammar_count = max_added_grammar_count
         self.force = force
         self.grammars = self.grammars + [x for x in self.added_basic_grammars if x not in self.grammars]
-        self.data_t_series = data_t_series
+        self.data_t_series_list = data_t_series_list
 
         self.current_episode = 0
         self.i_transplant = i_transplant
@@ -53,6 +73,9 @@ class SplBase:
         self.variable_list = variable_list
         self.full_data = full_data
 
+        self.timestring = timestring
+        self.tree_size_strategy = tree_size_strategy
+
         
 
     def valid_prods(self, Node):
@@ -66,6 +89,7 @@ class SplBase:
         """
         Convert a parse tree to equation form
         """
+        # print(f"Tree: prods =", prods)
         seq = ['f']
         for prod in prods:
             if str(prod[0]) == 'Nothing':
@@ -138,11 +162,14 @@ class SplBase:
         """
         action = self.grammars[action_idx]
         state = state + ',' + action
+        # print(f"[debug] state = {state}")
         ntn = self.get_ntn(action, action_idx) + ntn[1:]
         
         if not ntn:
-            reward, eqs = self.score(self.tree_to_eq(state.split(',')), len(state.split(',')), 
-                                    self.data_sample, eta=self.eta, data_t_series=self.data_t_series)
+            tree_size = sum([len_tree_size(state_string, self.tree_size_strategy) for state_string in state.split(',')])
+            # len(state.split(',')),
+            reward, eqs = self.score(self.tree_to_eq(state.split(',')), tree_size,
+                                    self.data_sample, eta=self.eta, data_t_series_list=self.data_t_series_list, variable_list=self.variable_list)
             return state, ntn, reward, True, eqs
         else:
             return state, ntn, 0, False, None
@@ -186,8 +213,8 @@ class SplBase:
         Q_child = self.QN[next_state][0]
         N_parent = self.QN[state][1]
         N_child = self.QN[next_state][1]
-#         return Q_child / N_child + self.exploration_rate*np.sqrt(np.log(N_parent) / N_child)
-        return Q_child / N_child + self.exploration_rate*np.sqrt(np.sqrt(N_parent) / N_child)
+        return Q_child / N_child + self.exploration_rate*np.sqrt(np.log(N_parent) / N_child)
+        # return Q_child / N_child + self.exploration_rate*np.sqrt(np.sqrt(N_parent) / N_child)
 
 
     def update_QN_scale(self, new_scale):
@@ -312,7 +339,7 @@ class SplBase:
 
 
 
-    def run(self, num_episodes, num_play=50, print_flag=False, print_freq=100):
+    def run(self, num_episodes, num_play=50, print_flag=False, print_freq=50):
         """
         Monte Carlo Tree Search algorithm
         """
@@ -367,6 +394,8 @@ class SplBase:
                             # print("1 self.best_solution:", self.best_solution[0])
                             if len(self.best_solution) > 0 and len(self.best_solution[0]) == self.num_env:
                                 tt.add_iteration_result(self.best_solution[0])
+                                save_reward_history(i_episode, self.best_solution[0], self.best_solution[1],
+                                                    f"outputs_reward_his/{self.timestring}.csv")
                             break
                     else:
                         UC = []
@@ -381,6 +410,8 @@ class SplBase:
                         # print("2 self.best_solution:", self.best_solution[0])
                         if len(self.best_solution) > 0 and len(self.best_solution[0]) == self.num_env:
                             tt.add_iteration_result(self.best_solution[0])
+                            save_reward_history(i_episode, self.best_solution[0], self.best_solution[1],
+                                                f"outputs_reward_his/{self.timestring}.csv")
                         self.forced_nodes.pop()
                         break
 
@@ -404,6 +435,8 @@ class SplBase:
                         # print("3 self.best_solution:", self.best_solution[0])
                         if len(self.best_solution) > 0 and len(self.best_solution[0]) == self.num_env:
                             tt.add_iteration_result(self.best_solution[0])
+                            save_reward_history(i_episode, self.best_solution[0], self.best_solution[1],
+                                                f"outputs_reward_his/{self.timestring}.csv")
                         break
                 else:
                     UC = []
@@ -411,6 +444,7 @@ class SplBase:
                         self.update_modules(next_state, reward, eqs)
                         self.update_QN_scale(reward)
                         self.best_solution = (eqs, reward)
+                        # save_reward_history(eqs, reward, f"outputs_reward_his/{self.timestring}.csv")
                         if self.force:
                             self.convert_eq_to_tree_forced_node(eqs)
 
@@ -420,9 +454,10 @@ class SplBase:
                     # To avoid division by 0 when all leaves are terminal, we use 1e-6
                     self.UCBs[state][action] = 1e-6 
                     self.reward_his.append(self.best_solution[1])
-                    # print("4 self.best_solution:", self.best_solution[0])
+                    # print("4 self.best_solution:", self.best_solution)
                     if len(self.best_solution) > 0 and len(self.best_solution[0]) == self.num_env:
                         tt.add_iteration_result(self.best_solution[0])
+                        save_reward_history(i_episode, self.best_solution[0], self.best_solution[1], f"outputs_reward_his/{self.timestring}.csv")
                     break
                     
             # scenario 2: if current parent node not fully expanded, follow policy2
@@ -446,28 +481,32 @@ class SplBase:
                 # print("5 self.best_solution:", self.best_solution[0])
                 if len(self.best_solution) > 0 and len(self.best_solution[0]) == self.num_env:
                     tt.add_iteration_result(self.best_solution[0])
+                    save_reward_history(i_episode, self.best_solution[0], self.best_solution[1],
+                                        f"outputs_reward_his/{self.timestring}.csv")
 
             if (i_episode) % print_freq == 0:
                 # Print & Save object
                 if print_flag:
-                    print("\rEpisode {}/{}, current best reward {}\nCurrent grammars(n):{}.".format(i_episode, num_episodes, self.best_solution[1], self.grammars))
+                    print("\rEpisode {}/{}, current best reward {}, Current grammars(n):{}.".format(i_episode, num_episodes, self.best_solution[1], self.grammars))
                     # sys.stdout.flush()
+                    pass
                 self.current_episode = i_episode
-                num_env = len(self.data_sample)
-                save_path = os.path.join(self.output_dir, self.task, f"splbase_{num_env}_{self.eta}_{self.i_transplant}_{self.i_test}_min.pkl")
-#                 print(save_path, self.output_dir, self.task)
-                if not os.path.exists(os.path.dirname(save_path)):
-                    os.makedirs(os.path.dirname(save_path))
-                with open(save_path, "wb") as f:
-                    pickle.dump(self, f)
-                pass
+                # Skip .pkl save
+#                 num_env = len(self.data_sample)
+#                 save_path = os.path.join(self.output_dir, self.task, f"splbase_{num_env}_{self.eta}_{self.i_transplant}_{self.i_test}_min.pkl")
+# #                 print(save_path, self.output_dir, self.task)
+#                 if not os.path.exists(os.path.dirname(save_path)):
+#                     os.makedirs(os.path.dirname(save_path))
+#                 with open(save_path, "wb") as f:
+#                     pickle.dump(self, f)
+#                 pass
         
         tt.draw_term_trace(self.term_trace_path)
         return self.reward_his, self.best_solution, self.good_modules
 
 
 
-# def purify_strategy1(eq, data, variable_list, threshold=0.03):
+# def purify_strategy(eq, data, variable_list, threshold=0.03):
 #     # data is in shape (N, m). Here m is the dimension of the ODE system
 #     # print(f"input: {eq}")
 #     full_terms, terms, _ = extract(eq)
@@ -485,6 +524,6 @@ class SplBase:
 #     purified_full_terms = [full_terms[i] for i in range(len(full_terms)) if avg_ratio[i] >= threshold]
 #     purified_eq = sp.sympify(sp.Add(*purified_full_terms))
 #     # print(avg_ratio)
-#     # print(f"output: {purified_eq}")
+#     # print(f"output_v20240301: {purified_eq}")
 #     return purified_eq
 # >>>>>>> main

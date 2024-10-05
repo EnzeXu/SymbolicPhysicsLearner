@@ -6,7 +6,7 @@ from .scores import (score_with_est,
                      combine_rewards_epsilon_sigmoid_before)
 from .production_rule_utils import (simplify_eqs,
                                    )
-from ._utils import purify_strategy1
+from ._utils import purify_strategy, purify_strategy_parallel
 
 __all__ = [
     "SplBase",
@@ -16,5 +16,6 @@ __all__ = [
     "combine_rewards_epsilon_sigmoid",
     "combine_rewards_epsilon_sigmoid_before",
     "simplify_eqs",
-    "purify_strategy1",
+    "purify_strategy",
+    "purify_strategy_parallel",
 ]

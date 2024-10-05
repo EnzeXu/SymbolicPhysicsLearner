@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import gpytorch
 from scipy.interpolate import UnivariateSpline
@@ -59,7 +60,7 @@ class SplineMeanFunction(gpytorch.means.Mean):
     def forward(self, x):
         x_np = x.detach().cpu().numpy().squeeze()  # Squeeze to ensure it's 1D for spline
         y_spline = self.spline(x_np)
-        return torch.tensor(y_spline, dtype=x.dtype, device=x.device).squeeze()  # Squeeze output to 1D
+        return torch.tensor(y_spline, dtype=x.dtype, device=x.device).squeeze()  # Squeeze output_v20240301 to 1D
 
 class GPModelWithFixedNoise(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood):

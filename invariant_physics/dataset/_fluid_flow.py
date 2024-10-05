@@ -6,6 +6,7 @@ PARAMS_CONFIG = {
     "task": "Fluid_Flow",
     "env_max": 10,
     "ode_dim": 3,
+    "ode_dim_function": 3,
     "params_strategy_list": ["default", "random"],
     "params": {
         "default": params_default,

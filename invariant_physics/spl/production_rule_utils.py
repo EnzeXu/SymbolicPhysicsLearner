@@ -11,7 +11,12 @@ def simplify_eq(eq):
 def simplify_eqs(eqs):
     simplified_eqs = []
     for eq in eqs:
-        simplified_eqs.append(str(expand(simplify(eq))))
+        try:
+            simplified_eqs.append(str(expand(simplify(eq))))
+        except Exception as e:
+            print(e)
+            print(f"error in eq: {eq}")
+            simplified_eqs.append("")
     return simplified_eqs
 
 def prune_poly_c(eq):

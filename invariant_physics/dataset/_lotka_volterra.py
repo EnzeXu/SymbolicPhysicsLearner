@@ -6,6 +6,7 @@ PARAMS_CONFIG = {
     "task": "Lotka_Volterra",
     "env_max": 10,
     "ode_dim": 2,
+    "ode_dim_function": 2,
     "params_strategy_list": ["default", "random"],
     "params": {
         "default": params_default,
@@ -39,13 +40,13 @@ PARAMS_CONFIG = {
     ],
     "dt": 0.01,
     "t_min": 0,
-    "t_max": 20,
+    "t_max": 10,
     "curve_names": ["x", "y"],
     "rule_map": ['A->(A+A)', 'A->(A-A)', 'A->(A*A)', 'A->(A/A)', 'A->(A*C)', 
                 'A->x', 'A->y'],
     "ntn_list": ['A'],
     "truth_ode_format": ["{0}*x-{1}*x*y", "{3}*x*y-{2}*y"],
-    "purification_threshold": 0.03,
+    "purification_threshold": 0.05,
 }
 
 
