@@ -4,6 +4,11 @@ import numpy as np
 import random
 
 from collections import defaultdict
+
+
+def save_reward_history(i_episode, eqs, reward, path):
+    with open(path, "a") as f:
+        f.write(f"{i_episode},{','.join(eqs)},{reward}\n")
     
     
 class SplBase:

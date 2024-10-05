@@ -118,6 +118,8 @@ rule_map = {
                 'A->x', 'A->y','A->z'],
     "Single_Pendulum": ['A->(A+A)', 'A->(A-A)', 'A->(A*A)', 'A->(A/A)', 'A->(A*C)',
                 'A->x', 'A->y','A->z', 'A->sin(x)'],
+    "Friction_Pendulum": ['A->(A+A)', 'A->(A-A)', 'A->(A*A)', 'A->(A/A)', 'A->(A*C)',
+                     'A->x', 'A->y', 'A->sin(B)', 'A->cos(B)', 'A->log(B)', 'B->(B*C)', 'B->x', 'B->y'],
         # ['A->A+A', 'A->A-A', 'A->A*A', 'A->A/A',
         #          'A->cos(B)', 'A->sin(B)', 'A->1', 'A->x',
         #          'B->B+B', 'B->B-B', 'B->x', 'B->x**2', 'B->x**3', 'B->1'],
@@ -153,6 +155,7 @@ ntn_map = {
     "SIR": ['A'],
     "Lorenz": ['A'],
     "Single_Pendulum": ['A', 'B'],
+    "Friction_Pendulum": ['A', 'B'],
 }
 
 
