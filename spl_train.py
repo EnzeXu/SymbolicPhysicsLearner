@@ -75,7 +75,7 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
         seed=args.seed,
     ):
         print(f"Skipped Task: n_dynamic={args.n_dynamic}, noise_ratio={args.noise_ratio}, task_ode_num={args.task_ode_num}, env_id={args.env_id}, seed={args.seed}")
-        return
+        return None, None, None
 
     log_start_time = get_now_string()
     ode = get_dataset(log_start_time)
