@@ -135,6 +135,8 @@ def load_argparse(timestring=None):
                         help="extract_csv")
     parser.add_argument("--env_id", type=int, default=-999,
                         help="env_id. SPL only")
+    parser.add_argument("--record_task_date", type=str, default="00000000",
+                        help="record_task_date. SPL only")
 
     args = parser.parse_args()
     assert abs(args.train_ratio + args.test_ratio + args.val_ratio - 1.00) < 1e-3, f"train_ratio ({args.train_ratio}) + test_ratio ({args.test_ratio}) + val_ratio ({args.val_ratio}) should equals to 1.0 !"
@@ -645,6 +647,43 @@ def judge_expression_equal(str1, str2):
 
     return int(str(terms1) == str(terms2))
 
+
+# To skip completed tasks
+def generate_record_csv(ode_name):
+    end_file_path = f"logs/summary/logs_{ode_name}_end.csv"
+    assert os.path.exists(end_file_path)
+    df = pd.read_csv(end_file_path)
+    df = df[["start_time", "n_dynamic", "noise_ratio", "task_ode_num", "env_id", "seed"]]
+    df = df.sort_values(by=["n_dynamic", "noise_ratio", "task_ode_num", "env_id", "seed"])
+    df = df.reset_index(drop=True)
+    # print(df)
+    return df
+
+
+# To skip completed tasks
+def check_existing_record(task_date, ode_name, n_dynamic, noise_ratio, task_ode_num, env_id, seed):
+    record_folder = f"logs/{ode_name}_record/"
+    if not os.path.exists(record_folder):
+        os.makedirs(record_folder)
+    record_path = f"{record_folder}/{task_date}_record.csv"
+    if os.path.exists(record_path):
+        df = pd.read_csv(record_path)
+        print(f"Loaded the record csv from {record_path}.")
+    else:
+        df = generate_record_csv(ode_name)
+        df.to_csv(record_path, index=False)
+        print(f"Not found. Generate and save the record csv to {record_path}.")
+    df = df[
+        (df['n_dynamic'] == n_dynamic) &
+        (df['noise_ratio'].astype(float).round(3) == round(float(noise_ratio), 3)) &
+        (df['task_ode_num'].astype(int) == int(task_ode_num)) &
+        (df['env_id'].astype(int) == int(env_id)) &
+        (df['seed'].astype(int) == int(seed))
+        ]
+    # print(len(df))
+    if len(df) >= 1:
+        return True
+    return False
 
 
 if __name__ == "__main__":

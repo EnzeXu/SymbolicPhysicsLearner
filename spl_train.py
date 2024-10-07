@@ -9,7 +9,7 @@ from score import simplify_eq, score_with_est
 from spl_base import SplBase
 from spl_task_utils import *
 # from invariant_physics.spl import SplBase, score_with_est,
-from invariant_physics.dataset import evaluate_trajectory_rmse, get_dataset, load_argparse, simplify_and_replace_constants, judge_expression_equal
+from invariant_physics.dataset import evaluate_trajectory_rmse, get_dataset, load_argparse, simplify_and_replace_constants, judge_expression_equal, check_existing_record
 
 from utils import extract, get_now_string, setup_seed, remove_constant
 
@@ -65,6 +65,18 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
         runtimes for successful runs. 
     """
 
+    if check_existing_record(
+        task_date=args.record_task_date,
+        ode_name=args.task,
+        n_dynamic=args.n_dynamic,
+        noise_ratio=args.noise_ratio,
+        task_ode_num=args.task_ode_num,
+        env_id=args.env_id,
+        seed=args.seed,
+    ):
+        print(f"Skipped Task: n_dynamic={args.n_dynamic}, noise_ratio={args.noise_ratio}, task_ode_num={args.task_ode_num}, env_id={args.env_id}, seed={args.seed}")
+        return
+
     log_start_time = get_now_string()
     ode = get_dataset(log_start_time)
     ode.build()
@@ -90,6 +102,9 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
     n_dynamic_string = str(ode.args.n_dynamic)
     n_dynamic_list_string = str(ode.args.n_dynamic_list).replace(", ", "/").replace("[", "").replace("]", "").replace(
         "(", "").replace(")", "").replace(",", "")
+
+
+
 
     # dataset_type_string = str(ode.args.train_test_total)
     # dataset_list_string = str(list(ode.args.train_test_total_list)).replace(", ", "/").replace("[", "").replace("]", "").replace("(", "").replace(")", "").replace(",", "")
