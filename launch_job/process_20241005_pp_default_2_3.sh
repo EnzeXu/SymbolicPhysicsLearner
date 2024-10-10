@@ -1,6 +1,6 @@
 #!/bin/bash
 # Navigate to the workspace
-cd /data2/enze/workspace/SymbolicPhysicsLearner
+cd /home/exu03/workspace/SymbolicPhysicsLearner
 
 # Check if the tmux session exists
 tmux has-session -t pp_default_2_3 2>/dev/null
