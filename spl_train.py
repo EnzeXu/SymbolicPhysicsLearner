@@ -65,7 +65,7 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
         runtimes for successful runs. 
     """
 
-    if check_existing_record(
+    if args.record_task_date != "00000000" and check_existing_record(
         task_date=args.record_task_date,
         ode_name=args.task,
         n_dynamic=args.n_dynamic,
@@ -77,7 +77,10 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
         print(f"Skipped Task: n_dynamic={args.n_dynamic}, noise_ratio={args.noise_ratio}, task_ode_num={args.task_ode_num}, env_id={args.env_id}, seed={args.seed}")
         return None, None, None
 
-    log_start_time = get_now_string()
+    if args.timestring and len(args.timestring) > 1:
+        log_start_time = args.timestring
+    else:
+        log_start_time = get_now_string()
     ode = get_dataset(log_start_time)
     ode.build()
     if ode.args.extract_csv:
@@ -108,7 +111,8 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
 
     # dataset_type_string = str(ode.args.train_test_total)
     # dataset_list_string = str(list(ode.args.train_test_total_list)).replace(", ", "/").replace("[", "").replace("]", "").replace("(", "").replace(")", "").replace(",", "")
-    # env_dataset_size = int(ode.args.train_test_total_list[env_id])
+    env_dataset_size = int(n_dynamic_list_string.split("/")[env_id])
+
 
     # log_start_time = get_now_string()
     log_save_folder = f"logs/{task}/"
@@ -128,13 +132,13 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
     if not os.path.exists(log_path_begin):
         with open(log_path_begin, "w") as f:
             f.write(
-                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,env_dataset_size,n_dynamic,n_dynamic_list,cleaned_truth,cleaned_pred,match,seed\n")
+                f"start_time,status,end_time,task,num_run,num_env,eta,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,n_data_samples,n_dynamic,n_dynamic_list,env_dataset_size,cleaned_truth,cleaned_pred,match,seed\n")
     if not os.path.exists(log_path_end):
         with open(log_path_end, "w") as f:
             f.write(
-                f"start_time,status,end_time,task,num_run,num_env,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,env_dataset_size,n_dynamic,n_dynamic_list,cleaned_truth,cleaned_pred,match,seed\n")
+                f"start_time,status,end_time,task,num_run,num_env,eta,success_boolean,truth_ode,prediction_ode,mse,rmse,relative_mse,relative_rmse,reward_func_id,loss_func,noise_ratio,task_ode_num,dataset_sparse,env_id,n_data_samples,n_dynamic,n_dynamic_list,env_dataset_size,cleaned_truth,cleaned_pred,match,seed\n")
     with open(log_path_begin, "a") as f:
-        f.write(f"{log_start_time},Begin,{None},{task},{num_run},{num_env},{None},{None},{None},{None},{None},{None},{None},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{env_id},{ode.args.n_data_samples},{n_dynamic_string},{n_dynamic_list_string},{None},{None},{None},{args.seed}\n")
+        f.write(f"{log_start_time},Begin,{None},{task},{num_run},{num_env},{args.eta},{None},{None},{None},{None},{None},{None},{None},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{env_id},{ode.args.n_data_samples},{n_dynamic_string},{n_dynamic_list_string},{env_dataset_size},{None},{None},{None},{args.seed}\n")
 
 
 
@@ -273,7 +277,7 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
             match = None
 
         with open(log_path_end, "a") as f:
-            f.write(f"{log_start_time},End,{log_end_time},{task},{num_run},{num_env},{int(str(truth_ode_terms)==str(best_res_terms))},{truth_ode.replace(',',';')},{best_res.replace(',',';')},{mse},{rmse},{relative_mse},{relative_rmse},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{args.env_id},{ode.args.n_data_samples},{n_dynamic_string},{n_dynamic_list_string},{cleaned_truth},{cleaned_pred},{match},{args.seed}\n")
+            f.write(f"{log_start_time},End,{log_end_time},{task},{num_run},{num_env},{args.eta},{int(str(truth_ode_terms)==str(best_res_terms))},{truth_ode.replace(',',';')},{best_res.replace(',',';')},{mse},{rmse},{relative_mse},{relative_rmse},{args.use_new_reward},{args.loss_func},{noise_ratio:.6f},{task_ode_num},{args.dataset_sparse},{args.env_id},{ode.args.n_data_samples},{n_dynamic_string},{n_dynamic_list_string},{env_dataset_size},{cleaned_truth},{cleaned_pred},{match},{args.seed}\n")
 
     success_rate = num_success / num_run
     # if count_success:
@@ -413,10 +417,10 @@ if __name__ == "__main__":
     all_eqs, _, _ = run_spl(args, task, task_ode_num,
                             num_run=args.num_run,
                             max_len=50,
-                            eta=1 - 1e-3,
+                            eta=eta,
                             max_module_init=20,
-                            num_transplant=3,
-                            num_aug=0,
+                            num_transplant=1,
+                            num_aug=5,
                             transplant_step=args.transplant_step,
                             count_success=True,
                             data_dir='data/',
