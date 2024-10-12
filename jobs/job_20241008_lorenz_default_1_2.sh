@@ -13,9 +13,8 @@ do
                     do
                         timestring=$(python shell_timestring.py)
                         output_path="outputs/${model}_${timestring}.txt"
-                        echo "python -u spl_train.py --task ${model} --num_env 5 --env_id ${env_id} --use_new_reward 0 --num_run 1 --noise_ratio ${noise_ratio} --seed ${seed} --task_ode_num ${eq_id} --transplant_step 500 --eta 0.9999  --combine_operator average --n_dynamic ${n_dynamic} --num_transplant 1 --n_data_samples 400 --extract_csv 1"
-                        echo "python -u spl_train.py --task ${model} --num_env 5 --env_id ${env_id} --use_new_reward 0 --num_run 1 --noise_ratio ${noise_ratio} --seed ${seed} --task_ode_num ${eq_id} --transplant_step 500 --eta 0.9999  --combine_operator average --n_dynamic ${n_dynamic} --num_transplant 1 --n_data_samples 400 --extract_csv 1" >> ${output_path}
-                        python -u spl_train.py --task ${model} --num_env 5 --env_id ${env_id} --use_new_reward 0 --num_run 1 --noise_ratio ${noise_ratio} --seed ${seed} --task_ode_num ${eq_id} --transplant_step 500 --eta 0.9999  --combine_operator average --n_dynamic ${n_dynamic} --num_transplant 1 --n_data_samples 400 --extract_csv 1 >> ${output_path}
+                        echo "python -u spl_train.py --task ${model} --num_env 5 --env_id ${env_id} --use_new_reward 0 --num_run 1 --noise_ratio ${noise_ratio} --seed ${seed} --task_ode_num ${eq_id} --transplant_step 500 --eta 0.9999  --combine_operator average --n_dynamic ${n_dynamic} --num_transplant 1 --n_data_samples 400 --extract_csv 1 --record_task_date 20241008"
+                        python -u spl_train.py --task ${model} --num_env 5 --env_id ${env_id} --use_new_reward 0 --num_run 1 --noise_ratio ${noise_ratio} --seed ${seed} --task_ode_num ${eq_id} --transplant_step 500 --eta 0.9999  --combine_operator average --n_dynamic ${n_dynamic} --num_transplant 1 --n_data_samples 400 --extract_csv 1 --record_task_date 20241008 >> ${output_path}
                     done
                 done
             done   

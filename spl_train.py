@@ -395,6 +395,9 @@ if __name__ == "__main__":
 
     # args = parser.parse_args()
 
+    command = " ".join(sys.argv)
+    print(f"Command: {command}")
+
     args, parser = load_argparse()
     # print(f"timestring: {args.timestring}")
     # print(f"main_path: {args.main_path}")
