@@ -78,6 +78,9 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
         print(f"Skipped Task: n_dynamic={args.n_dynamic}, noise_ratio={args.noise_ratio}, task_ode_num={args.task_ode_num}, env_id={args.env_id}, seed={args.seed}", file=sys.stderr)
         return None, None, None
 
+    command = " ".join(sys.argv)
+    print(f"Command: {command}")
+
     if args.timestring and len(args.timestring) > 1:
         log_start_time = args.timestring
     else:
@@ -395,8 +398,7 @@ if __name__ == "__main__":
 
     # args = parser.parse_args()
 
-    command = " ".join(sys.argv)
-    print(f"Command: {command}")
+
 
     args, parser = load_argparse()
     # print(f"timestring: {args.timestring}")
