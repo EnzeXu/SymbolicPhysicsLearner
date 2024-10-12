@@ -7,6 +7,7 @@ import pandas as pd
 import pytz
 import re
 import pickle
+import sys
 import json
 import argparse
 from scipy.stats import qmc
@@ -133,7 +134,7 @@ def load_argparse(timestring=None):
     parser.add_argument("--extract_csv", type=int, default=0,
                         choices=[0, 1],
                         help="extract_csv")
-    parser.add_argument("--env_id", type=int, default=-999,
+    parser.add_argument("--env_id", type=int, default=None,
                         help="env_id. SPL only")
     parser.add_argument("--record_task_date", type=str, default="00000000",
                         help="record_task_date. SPL only")
@@ -501,7 +502,7 @@ def get_n_dynamic_list(n_dynamic: str, num_env: int, seed=None):
     assert len(n_dynamic_list) == num_env, "Error: mismatching between " + str(n_dynamic) + " and " + str(num_env)
     one_order = generate_random_order(num_env, seed)
     n_dynamic_list_swapped = reseat(n_dynamic_list, one_order)
-    print(f"Swap n_dynamic size: {n_dynamic_list} -> {n_dynamic_list_swapped}")
+    # print(f"Swap n_dynamic size: {n_dynamic_list} -> {n_dynamic_list_swapped}")
     return n_dynamic_list_swapped
 
 def get_partial_mask(n_partial: int, num_env: int, seed=None):
@@ -668,11 +669,11 @@ def check_existing_record(task_date, ode_name, n_dynamic, noise_ratio, task_ode_
     record_path = f"{record_folder}/{task_date}_record.csv"
     if os.path.exists(record_path):
         df = pd.read_csv(record_path)
-        print(f"Loaded the record csv from {record_path}.")
+        print(f"Loaded the record csv from {record_path}.", file=sys.stderr)
     else:
         df = generate_record_csv(ode_name)
         df.to_csv(record_path, index=False)
-        print(f"Not found. Generate and save the record csv to {record_path}.")
+        print(f"Not found. Generate and save the record csv to {record_path}.", file=sys.stderr)
     df = df[
         (df['n_dynamic'] == n_dynamic) &
         (df['noise_ratio'].astype(float).round(3) == round(float(noise_ratio), 3)) &

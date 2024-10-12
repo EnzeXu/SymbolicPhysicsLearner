@@ -188,6 +188,8 @@ class ODEDataset:
             print(f"Environment {i:02d}: params={[f'{item:.8f}' for item in self.params[i]]}, truth = {[item.format(*self.params[i]) for item in (self.params_config['truth_ode_format'] if self.params_config.get('truth_ode_format') else [])]}")
 
         for i in tqdm(range(self.args.num_env)):
+            if self.args.env_id != None and i != self.args.env_id:
+                continue
             # print(f"integrate_method: {self.args.integrate_method}")
             assert self.args.integrate_method in ["ode_int", "solve_ivp"]
             if not self.non_ode_function:
@@ -356,6 +358,8 @@ class ODEDataset:
 
         print(f"Saving to csv file: {dy_path_train_format} and {dy_path_test_format}")
         for i_env in tqdm(range(self.args.num_env)):
+            if self.args.env_id != None and i_env != self.args.env_id:
+                continue
             dy_path_train = dy_path_train_format.format(i_env)
             dy_path_test = dy_path_test_format.format(i_env)
             t_col = list(self.t_series_list[i_env][:self.args.n_data_samples])

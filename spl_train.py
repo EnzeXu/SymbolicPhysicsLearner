@@ -3,15 +3,16 @@ import pandas as pd
 import time
 import os
 import json
+import sys
 import argparse
 from functools import partial
 from score import simplify_eq, score_with_est
 from spl_base import SplBase
 from spl_task_utils import *
 # from invariant_physics.spl import SplBase, score_with_est,
-from invariant_physics.dataset import evaluate_trajectory_rmse, get_dataset, load_argparse, simplify_and_replace_constants, judge_expression_equal, check_existing_record
+from invariant_physics.dataset import evaluate_trajectory_rmse, get_dataset, load_argparse, simplify_and_replace_constants, judge_expression_equal, check_existing_record, remove_constant, extract, get_now_string
 
-from utils import extract, get_now_string, setup_seed, remove_constant
+from utils import setup_seed
 
 
 import warnings
@@ -74,7 +75,7 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
         env_id=args.env_id,
         seed=args.seed,
     ):
-        print(f"Skipped Task: n_dynamic={args.n_dynamic}, noise_ratio={args.noise_ratio}, task_ode_num={args.task_ode_num}, env_id={args.env_id}, seed={args.seed}")
+        print(f"Skipped Task: n_dynamic={args.n_dynamic}, noise_ratio={args.noise_ratio}, task_ode_num={args.task_ode_num}, env_id={args.env_id}, seed={args.seed}", file=sys.stderr)
         return None, None, None
 
     if args.timestring and len(args.timestring) > 1:
@@ -395,8 +396,8 @@ if __name__ == "__main__":
     # args = parser.parse_args()
 
     args, parser = load_argparse()
-    print(f"timestring: {args.timestring}")
-    print(f"main_path: {args.main_path}")
+    # print(f"timestring: {args.timestring}")
+    # print(f"main_path: {args.main_path}")
 
     RULEMAP = ['A->(A+A)', 'A->(A-A)', 'A->(A*A)', 'A->(A/A)', 'A->(A*C)',
                          'A->x', 'A->y']
