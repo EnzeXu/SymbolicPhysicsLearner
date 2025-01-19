@@ -86,7 +86,8 @@ def run_spl(args, task, task_ode_num, num_run, transplant_step, data_dir='data/'
     else:
         log_start_time = get_now_string()
     ode = get_dataset(log_start_time)
-    ode.build()
+    if not ode.args.load_data_from_existing:
+        ode.build()
     if ode.args.extract_csv:
         ode.extract_csv()
 
